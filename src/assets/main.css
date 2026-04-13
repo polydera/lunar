@@ -1,0 +1,154 @@
+@import 'tailwindcss';
+@import '@nuxt/ui';
+@import './theme.css';
+
+@theme {
+  --spacing-inset: var(--ln-inset);
+  --spacing-panel-gap: var(--ln-gap);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────── */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.panel-left-enter-active,
+.panel-left-leave-active {
+  transition:
+    opacity 220ms ease,
+    transform 260ms ease,
+    filter 240ms ease;
+}
+
+.panel-left-enter-from,
+.panel-left-leave-to {
+  opacity: 0;
+  transform: translateX(-12px) scale(0.98);
+  filter: blur(4px);
+}
+
+.panel-right-enter-active,
+.panel-right-leave-active {
+  transition:
+    opacity 220ms ease,
+    transform 260ms ease,
+    filter 240ms ease;
+}
+
+.panel-right-enter-from,
+.panel-right-leave-to {
+  opacity: 0;
+  transform: translateX(12px) scale(0.98);
+  filter: blur(4px);
+}
+.bar-top-enter-active,
+.bar-top-leave-active,
+.bar-bottom-enter-active,
+.bar-bottom-leave-active {
+  transition:
+    opacity 200ms ease,
+    transform 240ms ease;
+}
+
+.bar-top-enter-from,
+.bar-top-leave-to {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.98);
+}
+
+.bar-bottom-enter-from,
+.bar-bottom-leave-to {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.icon-fade-enter-active,
+.icon-fade-leave-active {
+  transition: all 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.8) rotate(-10deg);
+}
+
+.icon-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8) rotate(10deg);
+}
+
+.icon-fade-enter-to,
+.icon-fade-leave-from {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.icon-spin-cw-enter-active,
+.icon-spin-cw-leave-active,
+.icon-spin-ccw-enter-active,
+.icon-spin-ccw-leave-active {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+}
+
+/* Clockwise rotation (down to up) */
+.icon-spin-cw-enter-from {
+  transform: rotate(-180deg);
+}
+
+.icon-spin-cw-leave-to {
+  transform: rotate(180deg);
+}
+
+.icon-spin-cw-enter-to,
+.icon-spin-cw-leave-from {
+  transform: rotate(0deg);
+}
+
+/* Counter-clockwise rotation (up to down) */
+.icon-spin-ccw-enter-from {
+  transform: rotate(180deg);
+}
+
+.icon-spin-ccw-leave-to {
+  transform: rotate(-180deg);
+}
+
+.icon-spin-ccw-enter-to,
+.icon-spin-ccw-leave-from {
+  transform: rotate(0deg);
+}

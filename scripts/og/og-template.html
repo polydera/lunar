@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lunar OG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <style>
+      :root {
+        --bg-0: #0c1513;
+        --bg-1: #121f1d;
+        --bg-2: #192a27;
+        --teal: #00d5be;
+        --teal-dim: rgba(0, 213, 190, 0.6);
+        --teal-faint: rgba(0, 213, 190, 0.18);
+        --text: #e8e8e8;
+        --text-dim: rgba(255, 255, 255, 0.55);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: var(--bg-0);
+      }
+      body {
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+      }
+      .canvas {
+        width: 1200px;
+        height: 630px;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(1100px 700px at 78% 50%, rgba(0, 213, 190, 0.1), transparent 60%),
+          radial-gradient(900px 600px at 18% 30%, rgba(0, 213, 190, 0.04), transparent 55%),
+          linear-gradient(135deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%);
+      }
+      .canvas.twitter {
+        height: 675px;
+      }
+
+      /* Engineering grid overlay */
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 40%, transparent 100%);
+        -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 40%, transparent 100%);
+      }
+
+      /* Corner framing marks */
+      .corner {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-color: var(--teal-dim);
+        border-style: solid;
+      }
+      .corner.tl {
+        top: 40px;
+        left: 40px;
+        border-width: 1.5px 0 0 1.5px;
+      }
+      .corner.tr {
+        top: 40px;
+        right: 40px;
+        border-width: 1.5px 1.5px 0 0;
+      }
+      .corner.bl {
+        bottom: 40px;
+        left: 40px;
+        border-width: 0 0 1.5px 1.5px;
+      }
+      .corner.br {
+        bottom: 40px;
+        right: 40px;
+        border-width: 0 1.5px 1.5px 0;
+      }
+
+      /* Left content block */
+      .content {
+        position: absolute;
+        left: 80px;
+        top: 72px;
+        max-width: 600px;
+        z-index: 3;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+      .brand-mark {
+        width: 104px;
+        height: 104px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+      .brand-mark img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .brand-name {
+        font-size: 56px;
+        font-weight: 700;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        display: flex;
+        gap: 2px;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+      }
+      .letter {
+        background: linear-gradient(180deg, #5ef4de 0%, #00d5be 35%, #007a6a 85%, #005048 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .wordmark {
+        font-size: 80px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.035em;
+        color: var(--text);
+        margin-bottom: 28px;
+      }
+      .wordmark .accent {
+        color: var(--teal);
+      }
+      .tagline {
+        font-size: 21px;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--text-dim);
+        max-width: 560px;
+      }
+      .tagline strong {
+        font-weight: 700;
+        color: var(--teal);
+      }
+      .tags {
+        position: absolute;
+        left: 80px;
+        bottom: 54px;
+        display: flex;
+        gap: 8px;
+        font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        z-index: 3;
+      }
+      .tag {
+        padding: 7px 11px;
+        border: 1px solid var(--teal-faint);
+        color: var(--teal-dim);
+        border-radius: 2px;
+        background: rgba(0, 213, 190, 0.04);
+      }
+
+      /* Wireframe moon */
+      .moon {
+        position: absolute;
+        right: 44px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 560px;
+        height: 560px;
+        z-index: 1;
+      }
+      .moon::before {
+        content: '';
+        position: absolute;
+        inset: 60px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 38% 38%, rgba(0, 213, 190, 0.22), transparent 65%);
+        filter: blur(40px);
+      }
+      .moon svg {
+        position: absolute;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas" id="canvas">
+      <div class="grid"></div>
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+
+      <div class="moon" id="moon"></div>
+
+      <div class="content">
+        <div class="brand">
+          <span class="brand-mark">
+            <img src="../../public/favicon.svg" alt="" />
+          </span>
+          <span class="brand-name"><span class="letter">L</span><span class="letter">U</span><span class="letter">N</span><span class="letter">A</span><span class="letter">R</span></span>
+        </div>
+
+        <h1 class="wordmark">Real-time<br /><span class="accent">geometry</span><br />processing.</h1>
+        <p class="tagline">Powered by <strong>trueform</strong>. Runs in your browser. AI-ready.</p>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Arrangements</span>
+        <span class="tag">Booleans</span>
+        <span class="tag">Registration</span>
+        <span class="tag">Remeshing</span>
+        <span class="tag">Queries</span>
+      </div>
+    </div>
+
+    <script>
+      // ---------- Icosphere wireframe generator ----------
+      // Build an icosahedron, subdivide N times, project front-facing edges.
+
+      function buildIcosphere(subdiv) {
+        const t = (1 + Math.sqrt(5)) / 2
+        let verts = [
+          [-1, t, 0],
+          [1, t, 0],
+          [-1, -t, 0],
+          [1, -t, 0],
+          [0, -1, t],
+          [0, 1, t],
+          [0, -1, -t],
+          [0, 1, -t],
+          [t, 0, -1],
+          [t, 0, 1],
+          [-t, 0, -1],
+          [-t, 0, 1],
+        ].map((v) => normalize(v))
+
+        let faces = [
+          [0, 11, 5],
+          [0, 5, 1],
+          [0, 1, 7],
+          [0, 7, 10],
+          [0, 10, 11],
+          [1, 5, 9],
+          [5, 11, 4],
+          [11, 10, 2],
+          [10, 7, 6],
+          [7, 1, 8],
+          [3, 9, 4],
+          [3, 4, 2],
+          [3, 2, 6],
+          [3, 6, 8],
+          [3, 8, 9],
+          [4, 9, 5],
+          [2, 4, 11],
+          [6, 2, 10],
+          [8, 6, 7],
+          [9, 8, 1],
+        ]
+
+        const cache = new Map()
+        function midpoint(a, b) {
+          const key = a < b ? `${a}_${b}` : `${b}_${a}`
+          if (cache.has(key)) return cache.get(key)
+          const va = verts[a],
+            vb = verts[b]
+          const m = normalize([(va[0] + vb[0]) / 2, (va[1] + vb[1]) / 2, (va[2] + vb[2]) / 2])
+          const idx = verts.length
+          verts.push(m)
+          cache.set(key, idx)
+          return idx
+        }
+
+        for (let s = 0; s < subdiv; s++) {
+          const next = []
+          for (const [a, b, c] of faces) {
+            const ab = midpoint(a, b),
+              bc = midpoint(b, c),
+              ca = midpoint(c, a)
+            next.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca])
+          }
+          faces = next
+          cache.clear()
+        }
+        return { verts, faces }
+      }
+
+      function normalize(v) {
+        const l = Math.hypot(v[0], v[1], v[2])
+        return [v[0] / l, v[1] / l, v[2] / l]
+      }
+
+      function rotate(v, ax, ay) {
+        // rotate around Y then X
+        let [x, y, z] = v
+        let cy = Math.cos(ay),
+          sy = Math.sin(ay)
+        ;[x, z] = [x * cy + z * sy, -x * sy + z * cy]
+        let cx = Math.cos(ax),
+          sx = Math.sin(ax)
+        ;[y, z] = [y * cx - z * sx, y * sx + z * cx]
+        return [x, y, z]
+      }
+
+      function faceNormal(a, b, c) {
+        const ux = b[0] - a[0],
+          uy = b[1] - a[1],
+          uz = b[2] - a[2]
+        const vx = c[0] - a[0],
+          vy = c[1] - a[1],
+          vz = c[2] - a[2]
+        return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]
+      }
+
+      function renderMoon(targetEl, size) {
+        const { verts, faces } = buildIcosphere(3) // ~642 verts, ~1280 faces
+        const ax = -0.25,
+          ay = -0.35 // tilt
+        const rotated = verts.map((v) => rotate(v, ax, ay))
+
+        const R = size * 0.42
+        const cx = size / 2,
+          cy = size / 2
+        const project = (v) => [cx + v[0] * R, cy - v[1] * R]
+
+        // Edges: collect unique edges from front-facing faces
+        const edgeSet = new Set()
+        const frontVerts = new Set()
+        for (const [a, b, c] of faces) {
+          const va = rotated[a],
+            vb = rotated[b],
+            vc = rotated[c]
+          // Centroid z > 0 => front hemisphere (sphere centered at origin, viewer at +Z)
+          const cz = (va[2] + vb[2] + vc[2]) / 3
+          if (cz > 0.05) {
+            const add = (i, j) => edgeSet.add(i < j ? `${i}_${j}` : `${j}_${i}`)
+            add(a, b)
+            add(b, c)
+            add(c, a)
+            frontVerts.add(a)
+            frontVerts.add(b)
+            frontVerts.add(c)
+          }
+        }
+
+        const svgNS = 'http://www.w3.org/2000/svg'
+        const svg = document.createElementNS(svgNS, 'svg')
+        svg.setAttribute('viewBox', `0 0 ${size} ${size}`)
+        svg.setAttribute('width', size)
+        svg.setAttribute('height', size)
+
+        // Soft outer disc stroke for silhouette
+        const disc = document.createElementNS(svgNS, 'circle')
+        disc.setAttribute('cx', cx)
+        disc.setAttribute('cy', cy)
+        disc.setAttribute('r', R + 0.5)
+        disc.setAttribute('fill', 'none')
+        disc.setAttribute('stroke', 'rgba(0, 213, 190, 0.55)')
+        disc.setAttribute('stroke-width', '1.2')
+        svg.appendChild(disc)
+
+        // Edges
+        const gEdges = document.createElementNS(svgNS, 'g')
+        gEdges.setAttribute('stroke', '#00d5be')
+        gEdges.setAttribute('stroke-width', '0.85')
+        gEdges.setAttribute('stroke-linecap', 'round')
+        gEdges.setAttribute('fill', 'none')
+        for (const key of edgeSet) {
+          const [i, j] = key.split('_').map(Number)
+          const [x1, y1] = project(rotated[i])
+          const [x2, y2] = project(rotated[j])
+          const zAvg = (rotated[i][2] + rotated[j][2]) / 2
+          const alpha = 0.25 + 0.7 * Math.max(0, zAvg) // fade edges toward limb
+          const line = document.createElementNS(svgNS, 'line')
+          line.setAttribute('x1', x1)
+          line.setAttribute('y1', y1)
+          line.setAttribute('x2', x2)
+          line.setAttribute('y2', y2)
+          line.setAttribute('stroke', `rgba(0, 213, 190, ${alpha.toFixed(3)})`)
+          gEdges.appendChild(line)
+        }
+        svg.appendChild(gEdges)
+
+        // Vertex dots (front only, subset)
+        const gDots = document.createElementNS(svgNS, 'g')
+        gDots.setAttribute('fill', '#00d5be')
+        for (const i of frontVerts) {
+          const v = rotated[i]
+          if (v[2] < 0.3) continue // only the brightest vertices
+          const [x, y] = project(v)
+          const dot = document.createElementNS(svgNS, 'circle')
+          dot.setAttribute('cx', x)
+          dot.setAttribute('cy', y)
+          dot.setAttribute('r', 1.4)
+          dot.setAttribute('fill-opacity', (0.4 + 0.6 * v[2]).toFixed(3))
+          gDots.appendChild(dot)
+        }
+        svg.appendChild(gDots)
+
+        targetEl.appendChild(svg)
+      }
+
+      renderMoon(document.getElementById('moon'), 560)
+
+      // Variant switch via query string: ?variant=twitter
+      const params = new URLSearchParams(location.search)
+      if (params.get('variant') === 'twitter') {
+        document.getElementById('canvas').classList.add('twitter')
+      }
+    </script>
+  </body>
+</html>

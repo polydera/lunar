@@ -1,0 +1,86 @@
+:root {
+  --ui-radius: 0.5rem;
+
+  /* ── Surfaces (neutral, matches trueform's #1e1e1e / Tailwind neutral-900) ── */
+  --ui-bg: #171717;           /* neutral-900 */
+  --ui-bg-muted: #1e1e1e;     /* matches trueform 3D scene bg */
+  --ui-bg-elevated: #262626;  /* neutral-800 */
+  --ui-bg-accented: #2d2d2d;
+  --ui-bg-inverted: #e5e5e5;
+
+  /* ── Borders ──────────────────────────────────────────────────────────────
+   * The generic Nuxt-UI borders (--ui-border, --ui-border-muted) stay neutral
+   * so internal component chrome (inputs, selects, menus) doesn't tint the
+   * whole UI. The *accented* border goes brand teal — Nuxt UI components
+   * that opt into it get a real pop. */
+  --ui-border: rgba(255, 255, 255, 0.12);
+  --ui-border-muted: rgba(255, 255, 255, 0.08);
+  --ui-border-accented: rgba(0, 213, 190, 0.25);
+  --ui-border-inverted: #171717;
+
+  /* ── Text ── */
+  --ui-text: #d1d1d1;
+  --ui-text-dimmed: rgba(255, 255, 255, 0.4);
+  --ui-text-muted: rgba(255, 255, 255, 0.55);
+  --ui-text-toned: rgba(255, 255, 255, 0.7);
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #171717;
+
+  /* ── Luna theme tokens ────────────────────────────────────────────────────
+   * Teal (#00d5be) is the trueform brand accent. It is reserved for:
+   *   - Selection highlight (3D editor convention)
+   *   - Active toggles / Run button / active category
+   *   - Accent text on important states (mode label, task status)
+   *   - Curves rendering in the viewport (matches trueform examples)
+   *
+   * Everything else — panels, borders, hover, backgrounds — stays neutral.
+   * ────────────────────────────────────────────────────────────────────────── */
+
+  /* Selection — teal, the one scene-editor affordance that should pop */
+  --ln-selection: rgba(0, 213, 190, 0.14);
+  --ln-selection-hover: rgba(0, 213, 190, 0.24);
+  --ln-selection-text: white;
+
+  /* Generic hover / muted overlay — neutral, no hue bias */
+  --ln-hover: rgba(255, 255, 255, 0.05);
+  --ln-muted: rgba(255, 255, 255, 0.06);
+
+  /* Active toggle / pressed-button background — teal, a POP state */
+  --ln-active: rgba(0, 213, 190, 0.25);
+
+  /* Accent text / curves color — brand teal */
+  --ln-accent: #00d5be;
+  --ln-curves-color: #00d5be;
+
+  /* Dimmed accent — the "baseline" of a control whose filled/active
+     portion uses --ln-accent. E.g. slider track vs slider range. */
+  --ln-accent-dim: rgba(0, 213, 190, 0.25);
+
+  /* Default mesh color when no explicit color is set */
+  --ln-object-color: #cccccc;
+
+  /* ── Layout spacing ── */
+  --ln-inset: 0.5rem;   /* viewport edge → panels */
+  --ln-gap: 0.5rem;     /* between adjacent panels */
+
+  /* Panel chrome — thicker edge with a subtler teal tint. Presence comes
+     from shape/thickness, not color intensity, so panels feel defined
+     without the whole UI feeling teal. */
+  --ln-panel: rgba(163, 163, 163, 0.1);
+  --ln-panel-border: rgba(0, 213, 190, 0.08);
+  --ln-panel-border-width: 2px;
+
+  /* Popup background: the near-opaque equivalent of the translucent `--ln-panel`
+     once it composites over the viewport gradient. For overlays that must stay
+     readable over busy scene content (mode help, long-form tooltips, modals). */
+  --ln-popup: rgba(29, 39, 37, 0.85);
+
+  /* Viewport background gradient — mostly neutral with a subtle teal hint
+     so the scene feels on-brand without the previous green-wash. Roughly
+     half the saturation of the original palette, plus a very faint central
+     glow to give the scene depth. */
+  --ln-bg-gradient-start: #0c1513;
+  --ln-bg-gradient-mid: #121f1d;
+  --ln-bg-gradient-end: #192a27;
+  --ln-bg-glow: rgba(0, 213, 190, 0.06);
+}

@@ -1,0 +1,55 @@
+{
+  "name": "luna",
+  "version": "0.8.7",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "copy-tf": "rsync -a ../trueform/typescript/dist/ src/lib/trueform/ && cp ../trueform/typescript/dist/trueform_wasm.js ../trueform/typescript/dist/trueform_wasm.wasm ../trueform/typescript/dist/index.js public/trueform/",
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "mcp": "npx tsx mcp/bridge.ts",
+    "dev:mcp": "pnpm build && wrangler dev --port 8788",
+    "deploy": "pnpm build && wrangler deploy",
+    "lint": "eslint . --fix --cache",
+    "format": "prettier --write --experimental-cli src/"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.6.0",
+    "@polydera/trueform": "^0.8.7",
+    "@vueuse/core": "^13.9.0",
+    "aria-hidden": "^1.2.6",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "three": "^0.182.0",
+    "vue": "^3.5.31",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.12.0",
+    "@types/three": "^0.182.0",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/eslint-config-typescript": "^14.7.0",
+    "@vue/tsconfig": "^0.8.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-vue": "~10.5.1",
+    "jiti": "^2.6.1",
+    "npm-run-all2": "^8.0.4",
+    "prettier": "3.6.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-vue-devtools": "^8.1.1",
+    "vue-tsc": "^3.2.6",
+    "wrangler": "^4.82.1",
+    "ws": "^8.20.0"
+  }
+}

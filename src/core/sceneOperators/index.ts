@@ -1,0 +1,2 @@
+import './colorByArray'
+import './shading'
