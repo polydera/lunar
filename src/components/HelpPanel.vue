@@ -88,7 +88,7 @@ const tips = [
   `Press ${isMac ? '⌘ K' : 'Ctrl + K'} to find any operator, action, or link by name.`,
 ]
 
-const version = '0.8.7'
+const version = '0.8.8'
 </script>
 
 <template>

@@ -28,6 +28,35 @@ interface PendingRequest {
   timer: ReturnType<typeof setTimeout>
 }
 
+/** Truncate arrays longer than threshold to `[...N items]` for readable logs. */
+function truncateArgs(val: unknown, maxArrayLen = 20): unknown {
+  if (Array.isArray(val)) {
+    if (val.length > maxArrayLen) return `[...${val.length} items]`
+    return val.map((v) => truncateArgs(v, maxArrayLen))
+  }
+  if (val && typeof val === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(val)) out[k] = truncateArgs(v, maxArrayLen)
+    return out
+  }
+  return val
+}
+
+function mcpLog(
+  session: string,
+  rpcId: unknown,
+  tool: string,
+  event: 'call' | 'response',
+  data: { args?: Record<string, unknown>; ms?: number; ok?: boolean; error?: string },
+) {
+  const entry: Record<string, unknown> = { session, rpcId, tool, event }
+  if (data.args) entry.args = truncateArgs(data.args)
+  if (data.ms !== undefined) entry.ms = data.ms
+  if (data.ok !== undefined) entry.ok = data.ok
+  if (data.error) entry.error = data.error
+  console.log(JSON.stringify(entry))
+}
+
 export class LunaMcpSession implements DurableObject {
   private browserWs: WebSocket | null = null
   private pending = new Map<string, PendingRequest>()
@@ -148,7 +177,7 @@ export class LunaMcpSession implements DurableObject {
         id,
         result: {
           protocolVersion: MCP_PROTOCOL_VERSION,
-          serverInfo: { name: 'lunar', version: '0.8.7' },
+          serverInfo: { name: 'lunar', version: '0.8.8' },
           capabilities: { tools: {} },
           instructions: SERVER_INSTRUCTIONS,
         },
@@ -191,7 +220,12 @@ export class LunaMcpSession implements DurableObject {
         }
         args[k] = v
       }
+
+      mcpLog(this.mcpSessionId, id, name, 'call', { args })
+      const t0 = Date.now()
+
       if (!this.browserWs) {
+        mcpLog(this.mcpSessionId, id, name, 'response', { ok: false, error: 'Browser not connected', ms: Date.now() - t0 })
         return this.jsonResponse({
           jsonrpc: '2.0',
           id,
@@ -205,13 +239,16 @@ export class LunaMcpSession implements DurableObject {
       try {
         const result = await this.sendToBrowser(name, args)
         const content = this.formatResult(result)
+        mcpLog(this.mcpSessionId, id, name, 'response', { ok: true, ms: Date.now() - t0 })
         return this.jsonResponse({ jsonrpc: '2.0', id, result: { content } })
       } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        mcpLog(this.mcpSessionId, id, name, 'response', { ok: false, error, ms: Date.now() - t0 })
         return this.jsonResponse({
           jsonrpc: '2.0',
           id,
           result: {
-            content: [{ type: 'text', text: `Error: ${e instanceof Error ? e.message : String(e)}` }],
+            content: [{ type: 'text', text: `Error: ${error}` }],
             isError: true,
           },
         })

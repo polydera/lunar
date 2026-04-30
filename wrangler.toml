@@ -12,6 +12,10 @@ run_worker_first = true
 name = "MCP_SESSION"
 class_name = "LunaMcpSession"
 
+[observability.logs]
+enabled = true
+invocation_logs = true
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["LunaMcpSession"]
