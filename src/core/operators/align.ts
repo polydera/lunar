@@ -124,7 +124,7 @@ operators.register({
 // Rotates a mesh so its OBB axes align with a reference frame (world or camera).
 // Pivot is the OBB center. No translation — pure reorientation.
 //
-// trueform returns: { origin: NDArrayFloat32 [3], axes: NDArrayFloat32 [3,3], extent: NDArrayFloat32 [3] }
+// trueform returns: { origin: NDArrayFloat64 [3], axes: NDArrayFloat64 [3,3], extent: NDArrayFloat64 [3] }
 //   origin = min corner of the OBB
 //   axes   = 3 normalized direction vectors (rows), one per extent
 //   extent = lengths along each axis
@@ -141,7 +141,7 @@ operators.register({
 type UpAxis = 'shortest' | 'middle' | 'longest'
 
 /** Given 3 extents, return indices sorted [longest, middle, shortest]. */
-function sortedExtentIndices(ext: Float32Array): [number, number, number] {
+function sortedExtentIndices(ext: Float32Array | Float64Array): [number, number, number] {
   const indexed: [number, number][] = [
     [ext[0]!, 0],
     [ext[1]!, 1],
@@ -167,16 +167,16 @@ function sortedExtentIndices(ext: Float32Array): [number, number, number] {
  */
 function applyAlignToFrame(m: tf.Mesh, obb: tf.OBB, up: UpAxis, target: string): void {
   // 1. Compute local OBB center
-  const halfExtent = obb.extent.mul(0.5) as tf.NDArrayFloat32
-  const offsetVec = halfExtent.unsqueeze(0).matMul(obb.axes).squeeze(0) as tf.NDArrayFloat32
-  const localCenter = obb.origin.add(offsetVec) as tf.NDArrayFloat32
-  const lc = localCenter.data as Float32Array
+  const halfExtent = obb.extent.mul(0.5) as tf.NDArrayFloat32 | tf.NDArrayFloat64
+  const offsetVec = halfExtent.unsqueeze(0).matMul(obb.axes).squeeze(0) as tf.NDArrayFloat32 | tf.NDArrayFloat64
+  const localCenter = obb.origin.add(offsetVec) as tf.NDArrayFloat32 | tf.NDArrayFloat64
+  const lc = localCenter.data as Float32Array | Float64Array
 
   // 2. Compute current world center
   const oldT = m.transformation
   let wcx: number, wcy: number, wcz: number
   if (oldT) {
-    const d = oldT.data as Float32Array
+    const d = oldT.data as Float32Array | Float64Array
     wcx = d[0]! * lc[0]! + d[1]! * lc[1]! + d[2]! * lc[2]! + d[3]!
     wcy = d[4]! * lc[0]! + d[5]! * lc[1]! + d[6]! * lc[2]! + d[7]!
     wcz = d[8]! * lc[0]! + d[9]! * lc[1]! + d[10]! * lc[2]! + d[11]!
@@ -191,14 +191,14 @@ function applyAlignToFrame(m: tf.Mesh, obb: tf.OBB, up: UpAxis, target: string):
     sy = 1,
     sz = 1
   if (oldT) {
-    const d = oldT.data as Float32Array
+    const d = oldT.data as Float32Array | Float64Array
     sx = Math.sqrt(d[0]! ** 2 + d[1]! ** 2 + d[2]! ** 2)
     sy = Math.sqrt(d[4]! ** 2 + d[5]! ** 2 + d[6]! ** 2)
     sz = Math.sqrt(d[8]! ** 2 + d[9]! ** 2 + d[10]! ** 2)
   }
 
   // 4. Sort extents, pick axis mapping
-  const [iLong, iMid, iShort] = sortedExtentIndices(obb.extent.data as Float32Array)
+  const [iLong, iMid, iShort] = sortedExtentIndices(obb.extent.data as Float32Array | Float64Array)
   const upIdx = up === 'longest' ? iLong : up === 'middle' ? iMid : iShort
   const remaining = [iLong, iMid, iShort].filter((i) => i !== upIdx)
   const rightIdx = remaining[0]!
@@ -206,7 +206,7 @@ function applyAlignToFrame(m: tf.Mesh, obb: tf.OBB, up: UpAxis, target: string):
 
   // 5. Build R_world: maps local OBB axes → world XYZ.
   //    Rows = re-ordered OBB axes [right, up, fwd].
-  const ad = obb.axes.data as Float32Array
+  const ad = obb.axes.data as Float32Array | Float64Array
   let r00 = ad[rightIdx * 3]!,
     r01 = ad[rightIdx * 3 + 1]!,
     r02 = ad[rightIdx * 3 + 2]!
@@ -257,8 +257,8 @@ function applyAlignToFrame(m: tf.Mesh, obb: tf.OBB, up: UpAxis, target: string):
   const ty = wcy - sy * (r10 * lc[0]! + r11 * lc[1]! + r12 * lc[2]!)
   const tz = wcz - sz * (r20 * lc[0]! + r21 * lc[1]! + r22 * lc[2]!)
 
-  // 8. Build the 4×4 row-major: [S*R | t; 0 0 0 1]
-  const mat4Data = new Float32Array([
+  // 8. Build the 4×4 row-major: [S*R | t; 0 0 0 1] in the mesh's dtype.
+  const mat4Source = [
     sx * r00,
     sx * r01,
     sx * r02,
@@ -275,9 +275,11 @@ function applyAlignToFrame(m: tf.Mesh, obb: tf.OBB, up: UpAxis, target: string):
     0,
     0,
     1,
-  ])
-
-  const newT = tf.ndarray(mat4Data, [4, 4]) as tf.NDArrayFloat32
+  ]
+  const newT: tf.NDArrayFloat32 | tf.NDArrayFloat64 =
+    m.dtype === 'float64'
+      ? tf.ndarray(new Float64Array(mat4Source), [4, 4])
+      : tf.ndarray(new Float32Array(mat4Source), [4, 4])
   m.transformation = newT
 
   // Cleanup

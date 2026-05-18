@@ -61,9 +61,71 @@
         }
       }
     </script>
+
+    <style>
+      #boot-splash,
+      #boot-error {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        background: #0a0a0a;
+        color: #d4d4d4;
+        font-family: system-ui, -apple-system, sans-serif;
+        text-align: center;
+        padding: 2rem;
+      }
+      #boot-splash img {
+        width: 96px;
+        height: 96px;
+        opacity: 0.9;
+      }
+      #boot-splash p {
+        margin: 0;
+        font-size: 0.95rem;
+        letter-spacing: 0.02em;
+        opacity: 0.7;
+      }
+      #boot-splash .spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid rgba(212, 212, 212, 0.15);
+        border-top-color: #00d5be;
+        border-radius: 50%;
+        animation: boot-spin 0.8s linear infinite;
+      }
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      #boot-error {
+        background: #1a0a0a;
+      }
+      #boot-error p {
+        max-width: 32rem;
+        margin: 0;
+        line-height: 1.5;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
-    <div id="app" class="isolate"></div>
+    <div id="app" class="isolate">
+      <div id="boot-splash">
+        <img src="/favicon.svg" alt="Lunar" />
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Loading geometry engine…</p>
+      </div>
+      <div id="boot-error" hidden>
+        <p>Failed to load the geometry engine. Check your connection and refresh the page.</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

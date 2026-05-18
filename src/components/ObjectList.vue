@@ -121,9 +121,14 @@ watch(
 </script>
 
 <template>
-  <WidgetMenu>
-    <UCollapsible :unmount-on-hide="false" v-model:open="open" class="flex flex-col gap-1">
-      <div class="flex flex-row gap-3 justify-between items-center rounded-md px-2 py-1 cursor-pointer">
+  <WidgetMenu class="flex flex-col min-h-0 overflow-hidden">
+    <UCollapsible
+      :unmount-on-hide="false"
+      v-model:open="open"
+      class="flex flex-col gap-1 min-h-0"
+      :ui="{ content: 'min-h-0 flex flex-col' }"
+    >
+      <div class="flex flex-row gap-3 justify-between items-center rounded-md px-2 py-1 cursor-pointer shrink-0">
         <h3 class="uppercase text-base font-bold select-none">Objects</h3>
         <UIcon
           name="i-hugeicons:arrow-up-01"
@@ -132,7 +137,7 @@ watch(
         />
       </div>
       <template #content>
-        <div class="flex flex-col gap-1 p-1 w-xs">
+        <div class="flex flex-col gap-1 p-1 w-xs min-h-0 overflow-y-auto">
           <EnhancedTree
             ref="treeRef"
             :items="scene.tree.value"

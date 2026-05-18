@@ -2,6 +2,7 @@ import type { Operator } from '@/core'
 import { operands } from '@/core'
 import { OPERAND_TYPES } from '@/core/operands'
 import { copyTransform } from '@/core/utils'
+import { ensureOperandMeshDtype } from '@/core/dtype'
 import { prefs } from '@/composables/usePreferences'
 import type { useScene } from '@/scene/useScene'
 import type { useDispatcher } from '@/composables/useDispatcher'
@@ -46,7 +47,10 @@ export function resolveInputs(
         const node = scene.getNode(nodeId)
         if (!node?.operandId) continue
         const operand = operands.get(node.operandId)
-        if (operand && operand.type === input.type) arr.push(operand.data)
+        if (operand && operand.type === input.type) {
+          if (input.type === 'mesh') ensureOperandMeshDtype(node.operandId)
+          arr.push(operand.data)
+        }
       }
       inputs[input.name] = arr
       continue
@@ -59,6 +63,7 @@ export function resolveInputs(
     if (!node?.operandId) return null
     const operand = operands.get(node.operandId)
     if (!operand) return null
+    if (input.type === 'mesh') ensureOperandMeshDtype(node.operandId)
     inputs[input.name] = operand.data
 
     if (input.childInput) {

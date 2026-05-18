@@ -187,8 +187,8 @@ async function generateMeshReport(operandId: string, label: string, mesh: tf.Mes
   let curvatureStats: MeshReport['curvatureStats'] = null
   try {
     const { k0, k1 } = await tf.async.principalCurvatures(mesh, 2)
-    const sum = k0.add(k1) as tf.NDArrayFloat32
-    const meanCurv = sum.mul(0.5) as tf.NDArrayFloat32
+    const sum = k0.add(k1) as tf.NDArray
+    const meanCurv = sum.mul(0.5) as tf.NDArray
     k0.delete()
     k1.delete()
     sum.delete()
@@ -202,7 +202,7 @@ async function generateMeshReport(operandId: string, label: string, mesh: tf.Mes
   const obb = props.obb as { extent?: unknown } | undefined
   let obbExtent: number[] | null = null
   if (obb?.extent) {
-    const raw = (obb.extent as any).data ? Array.from((obb.extent as any).data as Float32Array) : (obb.extent as number[])
+    const raw = (obb.extent as any).data ? Array.from((obb.extent as any).data as Float32Array | Float64Array) : (obb.extent as number[])
     obbExtent = raw.map((v: number) => Math.round(v * 100) / 100)
   }
 
@@ -268,7 +268,7 @@ function generateCurvesReport(operandId: string, label: string, scene: Scene): C
   const segments = (props.segments as number) ?? Math.max(0, vertexRefs - paths)
   const totalLength = (props.totalLength as number) ?? 0
 
-  const aabb = props.aabb as { data?: Float32Array } | undefined
+  const aabb = props.aabb as { data?: Float32Array | Float64Array } | undefined
   let aabbExtent: number[] | null = null
   if (aabb?.data && aabb.data.length === 6) {
     const d = aabb.data

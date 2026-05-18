@@ -74,7 +74,7 @@ export function computeNDArrayStats(arr: tf.NDArray): NDArrayStats {
   let nanCount = 0
   let statsArr: tf.NDArray = arr
   let statsOwned = false
-  if (dtype === 'float32') {
+  if (dtype === 'float32' || dtype === 'float64') {
     const finiteMask = arr.eq(arr) as tf.NDArrayBool
     const finiteInt = finiteMask.as('int32') as tf.NDArrayInt32
     const finiteCount = finiteInt.sum() as number
@@ -118,7 +118,7 @@ export function computeNDArrayStats(arr: tf.NDArray): NDArrayStats {
 
 /** Std via mean-of-squares on an owned clone. Pure WASM. */
 function computeStd(arr: tf.NDArray, mean: number, n: number, dtype: string): number {
-  const centered = cloneAsFloat32(arr, dtype)
+  const centered = cloneAsFloat(arr, dtype)
   centered.sub_(mean)
   centered.mul_(centered)
   const variance = (centered.sum() as number) / n
@@ -127,32 +127,34 @@ function computeStd(arr: tf.NDArray, mean: number, n: number, dtype: string): nu
 }
 
 /**
- * Owned float32 copy we can mutate in place.
- * - float32 input: `.clone()` — `.as('float32')` would return a shallow copy
- *   sharing the buffer; mutating it would corrupt the caller's data.
- * - other dtypes: `.as('float32')` already allocates a fresh buffer we own.
+ * Owned float copy we can mutate in place. Preserves float dtype; int dtypes
+ * upcast to float64.
+ * - float32/float64 input: `.clone()` — `.as(<same dtype>)` would return a
+ *   shallow copy sharing the buffer; mutating it would corrupt the caller's
+ *   data.
+ * - other dtypes: `.as('float64')` allocates a fresh buffer we own.
  */
-function cloneAsFloat32(arr: tf.NDArray, dtype: string): tf.NDArrayFloat32 {
-  if (dtype === 'float32') {
-    return (arr as tf.NDArrayFloat32).clone()
+function cloneAsFloat(arr: tf.NDArray, dtype: string): tf.NDArray {
+  if (dtype === 'float32' || dtype === 'float64') {
+    return (arr as tf.NDArrayFloat32 | tf.NDArrayFloat64).clone()
   }
-  return arr.as('float32') as tf.NDArrayFloat32
+  return arr.as('float64')
 }
 
 /** Per-column stats for a 2D ndarray of shape [N, K]. All via axis reductions. */
 function computeComponentStats(arr: tf.NDArray, N: number, K: number, dtype: string): ComponentStats[] {
-  const minPerCol = arr.min(0) as tf.NDArrayFloat32 // [K]
-  const maxPerCol = arr.max(0) as tf.NDArrayFloat32 // [K]
-  const meanPerCol = arr.mean(0) as tf.NDArrayFloat32 // [K]
+  const minPerCol = arr.min(0) as tf.NDArray // [K]
+  const maxPerCol = arr.max(0) as tf.NDArray // [K]
+  const meanPerCol = arr.mean(0) as tf.NDArray // [K]
 
   // Same mean-of-squares pattern, per-column: clone once, sub_ (broadcasts
   // [K] over [N, K]), mul_ (in-place square), sum(0) collapses axis 0 →
   // [K] sum of squared deviations. axis_reduce_impl doesn't use tf::reduce,
   // so no parallel-combiner bug here.
-  const workCopy = cloneAsFloat32(arr, dtype)
+  const workCopy = cloneAsFloat(arr, dtype)
   workCopy.sub_(meanPerCol)
   workCopy.mul_(workCopy)
-  const sumSqPerCol = workCopy.sum(0) as tf.NDArrayFloat32 // [K]
+  const sumSqPerCol = workCopy.sum(0) as tf.NDArray // [K]
   workCopy.delete()
 
   const minD = minPerCol.data

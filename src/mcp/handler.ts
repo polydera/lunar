@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { operators, operands, sceneOperators } from '@/core'
 import { OPERAND_TYPES } from '@/core/operands'
 import * as tf from '@polydera/trueform'
+import { matrixFor } from '@/core/dtype'
+import { trackOperation } from '@/analytics/umami'
 import { generateToolSchemas } from './toolSchemas'
 import { registerSceneActions } from './actions/scene'
 import { registerCameraActions } from './actions/camera'
@@ -62,7 +64,7 @@ export function createHandler(ctx: HandlerContext) {
 
     const result = fn(m)
     const rm = result.clone().transpose()
-    const newMat = tf.ndarray(new Float32Array(rm.toArray())).reshape([4, 4])
+    const newMat = matrixFor(tfObj, rm.toArray())
     tfObj.transformation = newMat
     newMat.delete()
     ctx.scene.dirty.add(nodeId)
@@ -155,6 +157,8 @@ export function createHandler(ctx: HandlerContext) {
     const { operatorId, nodeIds: rawNodeIds, nodeId, params: opParams } = op
     const nodeIds = rawNodeIds ?? (nodeId ? [nodeId] : [])
     const params = opParams ?? {}
+
+    trackOperation('mcp', operatorId)
 
     const so = sceneOperators.get(operatorId)
     if (so) {

@@ -177,7 +177,7 @@ export class LunaMcpSession implements DurableObject {
         id,
         result: {
           protocolVersion: MCP_PROTOCOL_VERSION,
-          serverInfo: { name: 'lunar', version: '0.8.8' },
+          serverInfo: { name: 'lunar', version: '0.9.4' },
           capabilities: { tools: {} },
           instructions: SERVER_INSTRUCTIONS,
         },

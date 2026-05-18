@@ -323,3 +323,4 @@ operators.register({
     return (await tf.async.polygonArrangements(args.mesh as tf.Mesh, opts)) as unknown as Record<string, unknown>
   },
 })
+

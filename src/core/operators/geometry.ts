@@ -1,6 +1,7 @@
 import * as tf from '@polydera/trueform'
 import { operators } from '../registry'
 import { copyTransform } from '../utils'
+import { prefs } from '@/composables/usePreferences'
 
 operators.register({
   id: 'tf.sphereMesh',
@@ -42,9 +43,11 @@ operators.register({
     },
   ],
   outputs: [{ name: 'mesh', label: 'Mesh', type: 'mesh', description: 'Generated sphere mesh' }],
-  sync: ({ radius, stacks, segments }) => ({ mesh: tf.sphereMesh(radius as number, stacks as number, segments as number) }),
+  sync: ({ radius, stacks, segments }) => ({
+    mesh: tf.sphereMesh(radius as number, stacks as number, segments as number, { dtype: prefs.floatDtype }),
+  }),
   async: async ({ radius, stacks, segments }) => ({
-    mesh: await tf.async.sphereMesh(radius as number, stacks as number, segments as number),
+    mesh: await tf.async.sphereMesh(radius as number, stacks as number, segments as number, { dtype: prefs.floatDtype }),
   }),
 })
 
@@ -126,6 +129,7 @@ operators.register({
       widthTicks as number,
       heightTicks as number,
       depthTicks as number,
+      { dtype: prefs.floatDtype },
     ),
   }),
   async: async ({ width, height, depth, widthTicks, heightTicks, depthTicks }) => ({
@@ -136,6 +140,7 @@ operators.register({
       widthTicks as number,
       heightTicks as number,
       depthTicks as number,
+      { dtype: prefs.floatDtype },
     ),
   }),
 })
@@ -181,10 +186,10 @@ operators.register({
   ],
   outputs: [{ name: 'mesh', label: 'Mesh', type: 'mesh', description: 'Generated cylinder mesh' }],
   sync: ({ radius, height, segments }) => ({
-    mesh: tf.cylinderMesh(radius as number, height as number, segments as number),
+    mesh: tf.cylinderMesh(radius as number, height as number, segments as number, { dtype: prefs.floatDtype }),
   }),
   async: async ({ radius, height, segments }) => ({
-    mesh: await tf.async.cylinderMesh(radius as number, height as number, segments as number),
+    mesh: await tf.async.cylinderMesh(radius as number, height as number, segments as number, { dtype: prefs.floatDtype }),
   }),
 })
 
@@ -239,10 +244,10 @@ operators.register({
   ],
   outputs: [{ name: 'mesh', label: 'Mesh', type: 'mesh', description: 'Generated plane mesh' }],
   sync: ({ width, height, widthTicks, heightTicks }) => ({
-    mesh: tf.planeMesh(width as number, height as number, widthTicks as number, heightTicks as number),
+    mesh: tf.planeMesh(width as number, height as number, widthTicks as number, heightTicks as number, { dtype: prefs.floatDtype }),
   }),
   async: async ({ width, height, widthTicks, heightTicks }) => ({
-    mesh: await tf.async.planeMesh(width as number, height as number, widthTicks as number, heightTicks as number),
+    mesh: await tf.async.planeMesh(width as number, height as number, widthTicks as number, heightTicks as number, { dtype: prefs.floatDtype }),
   }),
 })
 

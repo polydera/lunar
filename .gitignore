@@ -43,10 +43,9 @@ __screenshots__/
 .claude/settings.local.json
 .agents/skills/
 skills-lock.json
+docs/superpowers/
 
 # Nuxt UI
 .nuxt/
 auto-imports.d.ts
 components.d.ts
-src/lib/
-public/trueform/

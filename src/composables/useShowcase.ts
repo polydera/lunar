@@ -1,6 +1,7 @@
 import * as tf from '@polydera/trueform'
 import { operands, operators, sceneOperators } from '@/core'
 import { prefs } from '@/composables/usePreferences'
+import { readMesh } from '@/composables/useFileIO'
 import type { useScene } from '@/scene/useScene'
 import type { useDispatcher } from '@/composables/useDispatcher'
 import type { useViewport } from '@/viewport/useViewport'
@@ -25,7 +26,7 @@ export function useShowcase(scene: Scene, dispatcher: Dispatcher, getViewport: (
     // Stage 2: Import
     const ext = url.split('.').pop()?.toLowerCase()
     const { mesh, meshId } = await dispatcher.dispatch('Import', name, async () => {
-      const mesh = ext === 'obj' ? tf.readObj(buffer, { dynamic: true }) : tf.readStl(buffer)
+      const mesh = readMesh(buffer, ext)
       await tf.async.buildTree(mesh)
 
       const meshId = operands.nextId(name)
@@ -54,7 +55,7 @@ export function useShowcase(scene: Scene, dispatcher: Dispatcher, getViewport: (
       const curvatureOp = operators.get('tf.curvature')!
       const result = await curvatureOp.async({ mesh, variant: 'shapeIndex', k: 2 })
 
-      const arrays = (result as Record<string, unknown>).curvature as tf.NDArrayFloat32[]
+      const arrays = (result as Record<string, unknown>).curvature as (tf.NDArrayFloat32 | tf.NDArrayFloat64)[]
       const id = operands.nextId('shape-index')
       operands.add({ id, type: 'ndarray', data: arrays[0]! })
 

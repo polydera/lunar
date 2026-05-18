@@ -1,5 +1,6 @@
 import * as tf from '@polydera/trueform'
 import { operands } from '@/core'
+import { matrixFor } from '@/core/dtype'
 import { prefs } from '@/composables/usePreferences'
 import { generateReport } from '@/composables/useReport'
 import type { ActionRegistrar } from '../types'
@@ -13,12 +14,12 @@ export function registerGeometryActions({ register, ctx, sanitizeProperties }: A
     }
   }
 
-  function setRawTransform(data: unknown, transform?: unknown) {
+  function setRawTransform(obj: { dtype: 'float32' | 'float64' }, transform?: unknown) {
     if (!transform) return
     const arr = transform as number[]
     if (arr.length !== 16) throw new Error('transform must be 16 numbers')
-    const m = tf.ndarray(new Float32Array(arr)).reshape([4, 4])
-    ;(data as any).transformation = m
+    const m = matrixFor(obj, arr)
+    ;(obj as any).transformation = m
     m.delete()
   }
 
@@ -43,7 +44,8 @@ export function registerGeometryActions({ register, ctx, sanitizeProperties }: A
       if (faces.length % 3 !== 0) throw new Error('faces length must be divisible by 3')
       const parentId = (p.parentId as string | undefined) ?? null
       if (parentId && !ctx.scene.getNode(parentId)) throw new Error(`Parent node not found: ${parentId}`)
-      const mesh = tf.mesh(new Int32Array(faces), new Float32Array(points))
+      const ptsTyped = prefs.floatDtype === 'float64' ? new Float64Array(points) : new Float32Array(points)
+      const mesh = tf.mesh(new Int32Array(faces), ptsTyped)
       setRawTransform(mesh, p.transform)
       const id = operands.nextId('mesh')
       operands.add({ id, type: 'mesh', data: mesh })
@@ -88,7 +90,8 @@ export function registerGeometryActions({ register, ctx, sanitizeProperties }: A
       const offsetsND = tf.ndarray(new Int32Array(offsets))
       const dataND = tf.ndarray(new Int32Array(paths))
       const pathsBuf = tf.offsetBlockedBuffer(offsetsND, dataND)
-      const curves = tf.curves(pathsBuf, new Float32Array(points))
+      const ptsTyped = prefs.floatDtype === 'float64' ? new Float64Array(points) : new Float32Array(points)
+      const curves = tf.curves(pathsBuf, ptsTyped)
       offsetsND.delete()
       dataND.delete()
       setRawTransform(curves, p.transform)
@@ -119,7 +122,7 @@ export function registerGeometryActions({ register, ctx, sanitizeProperties }: A
       { name: 'label', label: 'Label', type: 'string', description: 'Display name' },
       { name: 'data', label: 'Data', type: 'array', description: 'Flat values' },
       { name: 'shape', label: 'Shape', type: 'array', description: 'Dimensions, e.g. [1000] or [1000, 3]' },
-      { name: 'dtype', label: 'Dtype', type: 'string', description: "'float32' (default) or 'int32'" },
+      { name: 'dtype', label: 'Dtype', type: 'string', description: "'float32', 'float64', or 'int32' (default: current floating-point setting)" },
       { name: 'parentId', label: 'Parent', type: 'string', description: 'Parent node ID (required)' },
       { name: 'color', label: 'Color', type: 'string', description: 'Hex color (optional)' },
     ],
@@ -127,14 +130,20 @@ export function registerGeometryActions({ register, ctx, sanitizeProperties }: A
       const label = p.label as string
       const data = p.data as number[]
       const shape = p.shape as number[]
-      const dtype = (p.dtype as string | undefined) ?? 'float32'
+      const dtype = (p.dtype as string | undefined) ?? prefs.floatDtype
       const parentId = p.parentId as string
       if (!parentId || !ctx.scene.getNode(parentId)) throw new Error(`Parent node not found: ${parentId}`)
-      if (dtype !== 'float32' && dtype !== 'int32') throw new Error("dtype must be 'float32' or 'int32'")
+      if (dtype !== 'float64' && dtype !== 'float32' && dtype !== 'int32')
+        throw new Error("dtype must be 'float64', 'float32', or 'int32'")
       const expected = shape.reduce((a, b) => a * b, 1)
       if (data.length !== expected)
         throw new Error(`data length ${data.length} does not match shape ${shape} (expected ${expected})`)
-      const arr = dtype === 'int32' ? tf.ndarray(new Int32Array(data), shape) : tf.ndarray(new Float32Array(data), shape)
+      const arr =
+        dtype === 'int32'
+          ? tf.ndarray(new Int32Array(data), shape)
+          : dtype === 'float32'
+            ? tf.ndarray(new Float32Array(data), shape)
+            : tf.ndarray(new Float64Array(data), shape)
       const id = operands.nextId('ndarray')
       operands.add({ id, type: 'ndarray', data: arr })
       const color = (p.color as string | undefined) ?? '#ffffff'

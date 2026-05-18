@@ -9,6 +9,7 @@ import { getOperationMode } from '@/core/operationMode'
 import { useUIState } from '@/composables/useUIState'
 import { getUIInputHandler } from '@/ui/inputHandlers'
 import { executeOperator, resolveInputs, type ExecuteContext } from '@/composables/operatorExecutor'
+import { trackOperation } from '@/analytics/umami'
 
 type Scene = ReturnType<typeof useScene>
 type InputMapping = ReturnType<typeof useInputMapping>
@@ -100,10 +101,15 @@ export function useActions(scene: Scene, inputMapping: InputMapping, dispatcher:
       // One mesh input, N selected → run once per mesh. Each iteration
       // gathers its own per-mesh params (childInput can differ per mesh)
       // and fires independently.
+      let tracked = false
       for (const nodeId of selection) {
         const params = gatherParamsFromUI(op, [nodeId])
         const inputs = resolveInputs(op, [nodeId], params, scene)
         if (!inputs) continue
+        if (!tracked) {
+          trackOperation(origin, op.id)
+          tracked = true
+        }
         executeOperator(op, inputs, buildExecuteCtx(op, [nodeId], origin))
       }
       return
@@ -113,6 +119,7 @@ export function useActions(scene: Scene, inputMapping: InputMapping, dispatcher:
     const params = gatherParamsFromUI(op, selection)
     const inputs = resolveInputs(op, selection, params, scene)
     if (!inputs) return
+    trackOperation(origin, op.id)
     await executeOperator(op, inputs, buildExecuteCtx(op, selection, origin))
   }
 

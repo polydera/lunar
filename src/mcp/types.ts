@@ -16,6 +16,7 @@ export interface HandlerContext {
   dispatcher: Dispatcher
   getViewport: () => Viewport | null
   importFromUrl: (url: string, name: string) => Promise<void>
+  exportSelection: (format: 'stl' | 'obj', nodeIds?: string[]) => Promise<void> | void
   onProgress?: ((operatorId: string, status: 'running' | 'done', index: number) => void) | undefined
 }
 

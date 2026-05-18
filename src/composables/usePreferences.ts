@@ -16,6 +16,7 @@ export interface Preferences {
   defaultCurvesColor: string
   zoomSpeed: number
   skipOnboarding: boolean
+  floatDtype: 'float32' | 'float64'
 }
 
 const STORAGE_KEY = 'lunar.prefs.v1'
@@ -28,6 +29,7 @@ export const DEFAULTS: Readonly<Preferences> = {
   defaultCurvesColor: '#00d5be',
   zoomSpeed: 1.0,
   skipOnboarding: false,
+  floatDtype: 'float64',
 }
 
 export const prefs = reactive<Preferences>({ ...DEFAULTS })

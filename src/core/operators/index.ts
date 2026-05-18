@@ -1,4 +1,3 @@
-import './io'
 import './geometry'
 import './topology'
 import './cut'

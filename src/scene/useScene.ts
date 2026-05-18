@@ -215,20 +215,6 @@ export function useScene() {
     }
   }
 
-  function setTransform(id: string, transform: Float32Array | null) {
-    const node = nodes.get(id)
-    if (!node?.operandId) return
-    const operand = operands.get(node.operandId)
-    if (!operand) return
-    const tfObj = operand.data as any
-    if (transform) {
-      tfObj.transformation = transform
-    } else {
-      tfObj.transformation = null
-    }
-    dirty.add(id)
-  }
-
   function isVisualNode(node: SceneNode): boolean {
     if (!node.operandId) return false
     const op = operands.get(node.operandId)
@@ -239,16 +225,14 @@ export function useScene() {
     const node = nodes.get(id)
     if (!node) return
 
-    // Can't make a child visible if its visual parent is hidden
-    if (visible && node.parentId) {
-      const parent = nodes.get(node.parentId)
-      if (parent && !parent.visible && isVisualNode(parent)) return
-    }
-
     node.visible = visible
     dirty.add(id)
 
-    // Cascade to all descendants
+    // Cascade to all descendants. Asymmetric override at the call site:
+    // toggling a parent cascades and resets any per-child state; clicking
+    // an individual child only changes that child. The renderer uses layer
+    // bits (not Object3D.visible) so a child can be visible even when its
+    // ancestor is hidden.
     function cascadeDown(parentId: string) {
       const childIds = children.get(parentId) ?? []
       for (const childId of childIds) {
@@ -471,7 +455,6 @@ export function useScene() {
     removeNode,
     moveNode,
     setLabel,
-    setTransform,
     setVisible,
     toggleVisible,
     setColor,

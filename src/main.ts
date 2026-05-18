@@ -1,22 +1,38 @@
 import './assets/main.css'
+import { initAnalytics } from './analytics/umami'
 
-// Workaround for https://github.com/unovue/reka-ui/issues/1280
-// Reka UI (Nuxt UI's substrate) uses `hideOthers` from the `aria-hidden` package
-// to mark #app as aria-hidden="true" when any overlay (modal, popover, select,
-// dropdown) opens. Trigger buttons inside #app retain focus, which Chrome flags
-// as a WAI-ARIA violation. The same package exports `suppressOthers`, which
-// uses the `inert` attribute instead — inert natively prevents focus, so the
-// warning doesn't fire. We swap the export before Reka UI imports it.
-// Remove this block once reka-ui switches to suppressOthers upstream.
-import * as ariaHidden from 'aria-hidden'
-;(ariaHidden as unknown as { hideOthers: typeof ariaHidden.suppressOthers }).hideOthers = ariaHidden.suppressOthers
+// In dev this resolves to the auto-init entry (top-level `await init()` fires
+// on import; wasm comes from local node_modules). In prod the Vite alias
+// rewrites this to `@polydera/trueform/manual` — no auto-init — and boot()
+// below calls tf.init() explicitly with CDN-backed wasm.
+import * as tf from '@polydera/trueform'
 
-import { createApp } from 'vue'
-import App from './App.vue'
+async function boot() {
+  if (import.meta.env.PROD) initAnalytics()
 
-import ui from '@nuxt/ui/vue-plugin'
+  if (!import.meta.env.DEV) {
+    const base = `https://cdn.jsdelivr.net/npm/@polydera/trueform@${__TF_VERSION__}/dist`
+    // toBlobURL wraps cross-origin assets as same-origin blob: URLs.
+    // Required: worker.js must be same-origin to be loaded as a Worker.
+    await tf.init({
+      wasmUrl: await tf.toBlobURL(`${base}/trueform_wasm.wasm`, 'application/wasm'),
+      workerUrl: await tf.toBlobURL(`${base}/trueform_wasm.js`, 'text/javascript'),
+    })
+  }
 
-const app = createApp(App)
-app.use(ui)
+  // Dynamic import: App.vue and its transitive deps evaluate AFTER init,
+  // so any module-level tf calls in those files see a ready engine.
+  const { createApp } = await import('vue')
+  const { default: App } = await import('./App.vue')
+  const { default: ui } = await import('@nuxt/ui/vue-plugin')
 
-app.mount('#app')
+  const app = createApp(App)
+  app.use(ui)
+  app.mount('#app')
+}
+
+boot().catch((err) => {
+  document.getElementById('boot-splash')?.setAttribute('hidden', '')
+  document.getElementById('boot-error')?.removeAttribute('hidden')
+  console.error('Failed to load geometry engine:', err)
+})

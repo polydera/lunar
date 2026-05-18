@@ -48,3 +48,82 @@ operators.register({
     return result as unknown as Record<string, unknown>
   },
 })
+
+operators.register({
+  id: 'tf.splitIntoDomains',
+  label: 'Split Domains',
+  description:
+    'Decompose a non-manifold surface mesh (typically the output of Mesh Arrangements) into per-domain watertight outward-oriented submeshes. Runs clean → domainLabels → splitIntoDomains.',
+  category: 'reindex',
+  tags: ['split', 'domains', 'arrangement', 'decompose', 'watertight', 'volumetric'],
+  docsUrl: 'https://trueform.polydera.com/ts/modules/reindex#split-into-domains',
+  expensive: true,
+  inputs: [
+    {
+      name: 'mesh',
+      label: 'Mesh',
+      type: 'mesh',
+      description:
+        'Non-manifold surface mesh bounding multiple 3D regions. Typically the result of tf.meshArrangements; self-intersections must already be resolved (clean alone does not).',
+    },
+    {
+      name: 'precision',
+      label: 'Precision',
+      type: 'number',
+      description: 'Number of decimal places for dedup tolerance during clean (0 = exact match)',
+      optional: true,
+      default: 6,
+      min: 0,
+      max: 10,
+      step: 1,
+    },
+    {
+      name: 'ignoreOpenFragments',
+      label: 'Ignore Open Fragments',
+      type: 'boolean',
+      description: 'Drop face-sides bounding open fragments (faces in components carrying boundary edges)',
+      optional: true,
+      default: true,
+    },
+    {
+      name: 'excludeOuterShell',
+      label: 'Exclude Outer Shell',
+      type: 'boolean',
+      description: 'Drop the unbounded universe domain so only bounded interior domains are returned',
+      optional: true,
+      default: true,
+    },
+  ],
+  outputs: [
+    { name: 'components', label: 'Domain', type: 'mesh', description: 'Per-domain watertight submeshes', array: true },
+    { name: 'labels', label: 'Labels', type: 'ndarray', description: 'Domain label value for each component' },
+  ],
+  sync: ({ mesh, precision, ignoreOpenFragments, excludeOuterShell }) => {
+    const input = mesh as tf.Mesh
+    const tol = (precision as number) > 0 ? Math.pow(10, -(precision as number)) : undefined
+    const cleaned = tf.cleaned(input, tol)
+    const dl = tf.domainLabels(cleaned, {
+      ignoreOpenFragments: ignoreOpenFragments as boolean,
+      excludeOuterShell: excludeOuterShell as boolean,
+    })
+    const result = tf.splitIntoDomains(cleaned, dl)
+    dl.labels.delete()
+    cleaned.delete()
+    for (const comp of result.components) copyTransform(input, comp)
+    return result as unknown as Record<string, unknown>
+  },
+  async: async ({ mesh, precision, ignoreOpenFragments, excludeOuterShell }) => {
+    const input = mesh as tf.Mesh
+    const tol = (precision as number) > 0 ? Math.pow(10, -(precision as number)) : undefined
+    const cleaned = await tf.async.cleaned(input, tol)
+    const dl = await tf.async.domainLabels(cleaned, {
+      ignoreOpenFragments: ignoreOpenFragments as boolean,
+      excludeOuterShell: excludeOuterShell as boolean,
+    })
+    const result = await tf.async.splitIntoDomains(cleaned, dl)
+    dl.labels.delete()
+    cleaned.delete()
+    for (const comp of result.components) copyTransform(input, comp)
+    return result as unknown as Record<string, unknown>
+  },
+})

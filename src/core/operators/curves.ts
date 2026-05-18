@@ -43,13 +43,11 @@ operators.register({
   ],
   outputs: [{ name: 'curves', label: 'Contours', type: 'curves', description: 'Contour curves' }],
   sync: ({ mesh, scalars, cutValues }) => {
-    const vals = new Float32Array(cutValues as number[])
-    const curves = tf.isocontours(mesh as tf.Mesh, scalars as tf.NDArrayFloat32, vals)
+    const curves = tf.isocontours(mesh as tf.Mesh, scalars as tf.NDArrayFloat32 | tf.NDArrayFloat64, cutValues as number[])
     return { curves }
   },
   async: async ({ mesh, scalars, cutValues }) => {
-    const vals = new Float32Array(cutValues as number[])
-    const curves = await tf.async.isocontours(mesh as tf.Mesh, scalars as tf.NDArrayFloat32, vals)
+    const curves = await tf.async.isocontours(mesh as tf.Mesh, scalars as tf.NDArrayFloat32 | tf.NDArrayFloat64, cutValues as number[])
     return { curves }
   },
 })
@@ -97,7 +95,7 @@ registerUIInputHandler('tf.isocontours', 'cutValues', {
     const n = count as number
     if (n < 1) return []
     const vals = tf.linspace(start as number, end as number, n)
-    const arr = Array.from(vals.data as Float32Array)
+    const arr = Array.from(vals.data)
     vals.delete()
     return arr
   },

@@ -12,6 +12,7 @@ import { useMCP } from '@/mcp/useMCP'
 import { getUIInputHandler } from '@/ui/inputHandlers'
 import { useFileIO } from '@/composables/useFileIO'
 import { useShowcase } from '@/composables/useShowcase'
+import { trackOperation } from '@/analytics/umami'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import SelectionBar from '@/components/layout/SelectionBar.vue'
 
@@ -76,6 +77,7 @@ const { importFile, importFromUrl, exportSelection, onDragOver, onDrop } = useFi
 const { downloadAndShowcase } = useShowcase(scene, dispatcher, getViewport)
 
 actions.register('io-open', () => {
+  trackOperation('user', 'io-open')
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.stl,.obj'
@@ -85,8 +87,14 @@ actions.register('io-open', () => {
   }
   input.click()
 })
-actions.register('io-export-stl', () => exportSelection('stl'))
-actions.register('io-export-obj', () => exportSelection('obj'))
+actions.register('io-export-stl', () => {
+  trackOperation('user', 'io-export-stl')
+  exportSelection('stl')
+})
+actions.register('io-export-obj', () => {
+  trackOperation('user', 'io-export-obj')
+  exportSelection('obj')
+})
 
 // ── Overlay state ───────────────────────────────────────
 
@@ -169,6 +177,7 @@ const handlerContext: import('@/mcp/handler').HandlerContext = {
   dispatcher,
   getViewport,
   importFromUrl,
+  exportSelection,
 }
 
 onMounted(() => {
@@ -227,7 +236,7 @@ onBeforeUnmount(() => {
       <div
         class="absolute right-inset top-inset bottom-inset z-10 pointer-events-none flex flex-col items-end gap-panel-gap w-80"
       >
-        <ObjectList class="pointer-events-auto shrink-0 w-full" :scene="scene" />
+        <ObjectList class="pointer-events-auto shrink min-h-0 w-full" :scene="scene" />
         <div class="flex-1" />
         <TaskPanel class="pointer-events-auto shrink min-h-0" :dispatcher="dispatcher" />
       </div>

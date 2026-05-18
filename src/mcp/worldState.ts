@@ -27,7 +27,7 @@ export function handleWorldState(params: Record<string, unknown>, ctx: HandlerCo
       const mat = (operand.data as any).transformation
       if (mat) center = roundArr([mat.data[3], mat.data[7], mat.data[11]])
       if (!center && props?.aabb) {
-        const aabb = props.aabb as { data: Float32Array }
+        const aabb = props.aabb as { data: Float32Array | Float64Array }
         if (aabb.data) {
           const d = aabb.data
           center = roundArr([(d[0]! + d[3]!) / 2, (d[1]! + d[4]!) / 2, (d[2]! + d[5]!) / 2])
@@ -63,7 +63,7 @@ function buildNodeDetail(id: string, ctx: HandlerContext) {
   let transform: number[] | null = null
   if (operand) {
     const mat = (operand.data as any).transformation
-    if (mat) transform = roundArr(Array.from(mat.data as Float32Array))
+    if (mat) transform = roundArr(Array.from(mat.data as Float32Array | Float64Array))
   }
   return {
     id: node.id,

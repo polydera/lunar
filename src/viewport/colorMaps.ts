@@ -141,8 +141,8 @@ function buildPolyderaLutFromWaypoints(waypoints: Float32Array): tf.NDArrayFloat
 
   const wp = tf.ndarray(waypoints, [N, 3]) as tf.NDArrayFloat32
 
-  // t in [0, 1] with 256 evenly spaced values
-  const t = tf.linspace(0, 1, 256) as tf.NDArrayFloat32
+  // t in [0, 1] with 256 evenly spaced values. LUT is GPU-bound (float32).
+  const t = tf.linspace(0, 1, 256).as('float32') as tf.NDArrayFloat32
 
   // Scale to [0, nSeg]
   const scaled = t.mul(nSeg) as tf.NDArrayFloat32
@@ -277,12 +277,16 @@ function sampleAt(name: ColorMapName, t: number): [number, number, number] {
  *   6. out = new Float32Array(colors.data) → JS-owned copy
  *   7. delete all intermediates
  */
-export function buildColorBuffer(values: tf.NDArrayFloat32, mapName: ColorMapName, clipPercent: number): Float32Array {
+export function buildColorBuffer(
+  values: tf.NDArrayFloat32 | tf.NDArrayFloat64,
+  mapName: ColorMapName,
+  clipPercent: number,
+): Float32Array {
   const n = values.length
 
   // Percentile-clipped range via sort.
   const p = Math.max(0, Math.min(49, clipPercent)) / 100
-  const sorted = values.sort() as tf.NDArrayFloat32
+  const sorted = values.sort() as tf.NDArray
   const sortedData = sorted.data
   const loIdx = Math.min(n - 1, Math.max(0, Math.floor(p * (n - 1))))
   const hiIdx = Math.min(n - 1, Math.max(0, Math.floor((1 - p) * (n - 1))))
@@ -319,12 +323,13 @@ export function buildColorBuffer(values: tf.NDArrayFloat32, mapName: ColorMapNam
   // Normalize to [0, 255]: (values - lo) * scale, clipped.
   // First op is copying (`sub`), the rest are in-place on the same buffer.
   const scale = 255 / (hi - lo)
-  const work = values.sub(lo) as tf.NDArrayFloat32
+  const work = values.sub(lo) as tf.NDArray
   work.mul_(scale)
   work.clip_(0, 255)
   const indices = work.as('int32') as tf.NDArrayInt32
 
-  // Gather colors by index from the LUT → [V, 3]
+  // Gather colors by index from the LUT → [V, 3]. LUT is float32, so take()
+  // returns float32 regardless of `values` dtype.
   const colors = lut.take(indices, 0) as tf.NDArrayFloat32
 
   // Single copy: WASM → JS-owned Float32Array

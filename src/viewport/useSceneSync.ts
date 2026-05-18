@@ -90,7 +90,7 @@ export function useSceneSync(threeScene: THREE.Scene, scene: Scene) {
     const g = new THREE.BufferGeometry()
     const pts = tfMesh.points
     const fcs = tfMesh.faces
-    g.setAttribute('position', new THREE.BufferAttribute(pts.data, 3))
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts.data), 3))
     g.setIndex(new THREE.BufferAttribute(new Uint32Array(fcs.data.buffer, fcs.data.byteOffset, fcs.data.length), 1))
     g.computeBoundingSphere()
     pts.delete()
@@ -103,7 +103,7 @@ export function useSceneSync(threeScene: THREE.Scene, scene: Scene) {
     if (!source.array) return false
     const operand = operands.get(source.array)
     if (!operand || operand.type !== 'ndarray') return false
-    const arr = operand.data as tf.NDArrayFloat32
+    const arr = operand.data as tf.NDArrayFloat32 | tf.NDArrayFloat64
     if (arr.shape[0] !== expectedLength) return false
     const colors = buildColorBuffer(arr, source.colorMap, source.clip)
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
@@ -126,7 +126,7 @@ export function useSceneSync(threeScene: THREE.Scene, scene: Scene) {
     if (variant === 'normals' && shading?.normals) {
       const operand = operands.get(shading.normals)
       if (operand && operand.type === 'ndarray') {
-        const arr = operand.data as tf.NDArrayFloat32
+        const arr = operand.data as tf.NDArrayFloat32 | tf.NDArrayFloat64
         if (arr.shape[0] === expectedLength && arr.shape[1] === 3) {
           geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(arr.data), 3))
           return 'normals'
@@ -219,7 +219,7 @@ export function useSceneSync(threeScene: THREE.Scene, scene: Scene) {
         if (parentNode?.operandId) {
           const aabb = scene.getProperties(parentNode.operandId)?.aabb as tf.AABB | undefined
           if (aabb) {
-            const d = aabb.data as Float32Array
+            const d = aabb.data as Float32Array | Float64Array
             const dx = d[3]! - d[0]!
             const dy = d[4]! - d[1]!
             const dz = d[5]! - d[2]!
@@ -350,7 +350,12 @@ export function useSceneSync(threeScene: THREE.Scene, scene: Scene) {
       ;(parentObj ?? threeScene).add(obj)
     }
 
-    obj.visible = node.visible
+    // Use layer bits, not Object3D.visible — visible cascades down the Three
+    // hierarchy and would force-hide a child whose scene parent is hidden.
+    // Layer membership is tested per-object by the renderer, so a child can
+    // be shown while its parent is hidden.
+    if (node.visible) obj.layers.enable(0)
+    else obj.layers.disable(0)
 
     if (node.operandId) {
       const operand = operands.get(node.operandId)

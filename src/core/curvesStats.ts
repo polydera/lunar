@@ -1,5 +1,7 @@
 import * as tf from '@polydera/trueform'
 
+type FloatND = tf.NDArrayFloat32 | tf.NDArrayFloat64
+
 export interface CurvesStats {
   /** Number of disjoint paths (loops / strokes). */
   paths: number
@@ -8,7 +10,7 @@ export interface CurvesStats {
   /** Total edge segments = vertexRefs − paths (each path of N verts has N−1 edges). */
   segments: number
   /** World-space AABB of the shared point buffer. Curves reference a subset of these. */
-  aabb: tf.NDArrayFloat32
+  aabb: FloatND
   /** Sum of per-edge Euclidean lengths. */
   totalLength: number
 }
@@ -40,11 +42,11 @@ export function computeCurvesStats(curves: tf.Curves): CurvesStats {
   // the end. Cleaner than letting each helper re-fetch and re-delete.
   const data = curves.paths.data // [D] int32
   const offsets = curves.paths.offsets // [P+1] int32
-  const points = curves.points // [V, 3] float32
+  const points = curves.points // [V, 3]
 
   const vertexRefs = data.shape[0]!
   const segments = Math.max(0, vertexRefs - paths)
-  const aabb = tf.aabbFrom(points) as tf.NDArrayFloat32
+  const aabb = tf.aabbFrom(points) as FloatND
   const totalLength = paths === 0 || segments === 0 ? 0 : computeTotalLength(data, offsets, points)
 
   data.delete()
@@ -72,7 +74,7 @@ export function computeCurvesStats(curves: tf.Curves): CurvesStats {
  *
  * Buffers are passed in (not re-fetched) so the caller owns their lifetime.
  */
-function computeTotalLength(data: tf.NDArrayInt32, offsets: tf.NDArrayInt32, points: tf.NDArrayFloat32): number {
+function computeTotalLength(data: tf.NDArrayInt32, offsets: tf.NDArrayInt32, points: FloatND): number {
   const D = data.shape[0]!
   const P = offsets.shape[0]! - 1
 
@@ -80,12 +82,12 @@ function computeTotalLength(data: tf.NDArrayInt32, offsets: tf.NDArrayInt32, poi
 
   const source = data.slice(0, D - 1) as tf.NDArrayInt32
   const target = data.slice(1, D) as tf.NDArrayInt32
-  const sourcePts = points.take(source, 0) as tf.NDArrayFloat32
-  const targetPts = points.take(target, 0) as tf.NDArrayFloat32
+  const sourcePts = points.take(source, 0) as FloatND
+  const targetPts = points.take(target, 0) as FloatND
 
   // diffs = targetPts - sourcePts. Own targetPts so we can mutate in place.
   targetPts.sub_(sourcePts)
-  const edgeLengths = targetPts.norm(1) as tf.NDArrayFloat32 // [D-1]
+  const edgeLengths = targetPts.norm(1) as FloatND // [D-1]
   const totalWithFakes = edgeLengths.sum() as number
 
   let fakesTotal = 0
@@ -93,7 +95,7 @@ function computeTotalLength(data: tf.NDArrayInt32, offsets: tf.NDArrayInt32, poi
     // Fake edges live at indices offsets[1..P-1] - 1 in edgeLengths.
     const fakeIdxView = offsets.slice(1, P) as tf.NDArrayInt32 // [P-1]
     const fakeIdx = fakeIdxView.sub(1) as tf.NDArrayInt32 // allocates owned buf
-    const fakeLengths = edgeLengths.take(fakeIdx, 0) as tf.NDArrayFloat32
+    const fakeLengths = edgeLengths.take(fakeIdx, 0) as FloatND
     fakesTotal = fakeLengths.sum() as number
     fakeIdxView.delete()
     fakeIdx.delete()

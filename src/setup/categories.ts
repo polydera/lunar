@@ -154,6 +154,7 @@ export function buildCategories(): Category[] {
       items: [
         { type: 'operator', operator: operators.get('tf.concatenateMeshes')! },
         { type: 'operator', operator: operators.get('tf.splitIntoComponents')! },
+        { type: 'operator', operator: operators.get('tf.splitIntoDomains')! },
       ],
     },
     {

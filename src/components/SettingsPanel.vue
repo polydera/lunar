@@ -5,6 +5,11 @@ import Separator from './Separator.vue'
 import FormField from './FormField.vue'
 
 const colorMapItems = COLOR_MAP_NAMES.map((n) => ({ label: n, value: n }))
+
+const floatDtypeItems = [
+  { label: 'Float (32-bit)', value: 'float32' },
+  { label: 'Double (64-bit)', value: 'float64' },
+]
 </script>
 
 <template>
@@ -56,6 +61,12 @@ const colorMapItems = COLOR_MAP_NAMES.map((n) => ({ label: n, value: n }))
             </div>
           </template>
         </UPopover>
+      </FormField>
+      <FormField
+        label="Floating point type"
+        description="Numeric precision for new geometry. Existing meshes convert on first operator use."
+      >
+        <USelect v-model="prefs.floatDtype" :items="floatDtypeItems" size="xs" class="w-full" />
       </FormField>
     </section>
 

@@ -3,6 +3,7 @@ import * as tf from '@polydera/trueform'
 import { shallowRef } from 'vue'
 import type { useScene } from '@/scene/useScene'
 import { operands } from '@/core'
+import { matrixFor } from '@/core/dtype'
 import type { PickResult } from './useViewport'
 
 type Scene = ReturnType<typeof useScene>
@@ -212,7 +213,7 @@ export function useInteraction({
           const node = scene.getNode(touchDragPick.nodeId)
           const operand = node?.operandId ? operands.get(node.operandId) : undefined
           if (operand) {
-            const aabb = scene.getProperties(node!.operandId!)?.aabb as { data?: Float32Array } | undefined
+            const aabb = scene.getProperties(node!.operandId!)?.aabb as { data?: Float32Array | Float64Array } | undefined
             if (aabb?.data) {
               const d = aabb.data
               dragCenter = new THREE.Vector3((d[0]! + d[3]!) / 2, (d[1]! + d[4]!) / 2, (d[2]! + d[5]!) / 2)
@@ -619,7 +620,7 @@ export function useInteraction({
       const tfObj = operand.data as any
       let mat = tfObj.transformation
       if (!mat) {
-        mat = tf.ndarray(new Float32Array([1, 0, 0, dx, 0, 1, 0, dy, 0, 0, 1, dz, 0, 0, 0, 1])).reshape([4, 4])
+        mat = matrixFor(tfObj, [1, 0, 0, dx, 0, 1, 0, dy, 0, 0, 1, dz, 0, 0, 0, 1])
         tfObj.transformation = mat
         mat.delete()
       } else {
@@ -653,7 +654,7 @@ export function useInteraction({
 
     const aabb = scene.getProperties(node.operandId)?.aabb as any
     if (aabb) {
-      const d = aabb.data as Float32Array
+      const d = aabb.data as Float32Array | Float64Array
       return new THREE.Vector3((d[0]! + d[3]!) / 2, (d[1]! + d[4]!) / 2, (d[2]! + d[5]!) / 2).applyMatrix4(m)
     }
     return new THREE.Vector3().setFromMatrixPosition(m)
@@ -797,7 +798,7 @@ export function useInteraction({
       const newMatrix = transform.clone().multiply(m)
 
       const rm = newMatrix.clone().transpose()
-      const newMat = tf.ndarray(new Float32Array(rm.toArray())).reshape([4, 4])
+      const newMat = matrixFor(tfObj, rm.toArray())
       tfObj.transformation = newMat
       newMat.delete()
 
@@ -870,7 +871,7 @@ export function useInteraction({
       if (!operand) continue
 
       // Read the mesh's current transformation.
-      const tfObj = operand.data as { transformation: tf.NDArrayFloat32 | null }
+      const tfObj = operand.data as { dtype: 'float32' | 'float64'; transformation: tf.NDArrayFloat32 | tf.NDArrayFloat64 | null }
       const mat = tfObj.transformation
       const m = new THREE.Matrix4()
       if (mat) {
@@ -893,7 +894,7 @@ export function useInteraction({
 
       const newMatrix = transform.multiply(m)
       const rm = newMatrix.clone().transpose()
-      const newMat = tf.ndarray(new Float32Array(rm.toArray())).reshape([4, 4]) as tf.NDArrayFloat32
+      const newMat = matrixFor(tfObj, rm.toArray())
       tfObj.transformation = newMat
       newMat.delete()
 
@@ -918,7 +919,7 @@ export function useInteraction({
       const operand = operands.get(node.operandId)
       if (!operand) continue
 
-      const tfObj = operand.data as { transformation: tf.NDArrayFloat32 | null }
+      const tfObj = operand.data as { dtype: 'float32' | 'float64'; transformation: tf.NDArrayFloat32 | tf.NDArrayFloat64 | null }
       const mat = tfObj.transformation
       const m = new THREE.Matrix4()
       if (mat) {
@@ -935,7 +936,7 @@ export function useInteraction({
 
       const newMatrix = transform.multiply(m)
       const rm = newMatrix.clone().transpose()
-      const newMat = tf.ndarray(new Float32Array(rm.toArray())).reshape([4, 4]) as tf.NDArrayFloat32
+      const newMat = matrixFor(tfObj, rm.toArray())
       tfObj.transformation = newMat
       newMat.delete()
 

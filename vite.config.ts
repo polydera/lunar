@@ -6,11 +6,13 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import ui from '@nuxt/ui/vite'
 import { mcpWebSocket } from './mcp/vite-plugin'
+import pkg from './package.json' with { type: 'json' }
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const tfVersion = pkg.dependencies['@polydera/trueform'].replace(/^[\^~]/, '')
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
     mcpWebSocket(),
@@ -180,9 +182,17 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+    alias: [
+      { find: '@', replacement: resolve(__dirname, 'src') },
+      { find: /^aria-hidden$/, replacement: resolve(__dirname, 'src/vendor/aria-hidden.ts') },
+      // In prod, route trueform through its manual-init entry so `main.ts`
+      // can call `tf.init({wasmUrl, workerUrl})` with a CDN-backed wasm.
+      // Dev keeps the auto-init entry for local-bundled iteration.
+      ...(mode === 'production' ? [{ find: '@polydera/trueform', replacement: '@polydera/trueform/manual' }] : []),
+    ],
+  },
+  define: {
+    __TF_VERSION__: JSON.stringify(tfVersion),
   },
   server: {
     headers: {
@@ -207,4 +217,4 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.wasm'],
-})
+}))

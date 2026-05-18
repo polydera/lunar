@@ -12,20 +12,18 @@ const curvatureLabels: Record<CurvatureVariant, string | string[]> = {
   minMax: ['Max Curvature', 'Min Curvature'],
 }
 
-function curvatureFromPrincipal(
-  k0: tf.NDArrayFloat32,
-  k1: tf.NDArrayFloat32,
-  variant: CurvatureVariant,
-): tf.NDArrayFloat32[] {
+type FloatND = tf.NDArrayFloat32 | tf.NDArrayFloat64
+
+function curvatureFromPrincipal(k0: FloatND, k1: FloatND, variant: CurvatureVariant): FloatND[] {
   switch (variant) {
     case 'minMax':
       return [k0.clone(), k1.clone()]
     case 'gaussian':
-      return [k0.mul(k1) as tf.NDArrayFloat32]
+      return [k0.mul(k1) as FloatND]
     case 'mean':
     default: {
-      const sum = k0.add(k1) as tf.NDArrayFloat32
-      const mean = sum.mul(0.5) as tf.NDArrayFloat32
+      const sum = k0.add(k1) as FloatND
+      const mean = sum.mul(0.5) as FloatND
       sum.delete()
       return [mean]
     }
@@ -79,7 +77,7 @@ operators.register({
       return { curvature: [tf.shapeIndex(m, kn)], __labels } as unknown as Record<string, unknown>
     }
     const { k0, k1 } = tf.principalCurvatures(m, kn)
-    const out = curvatureFromPrincipal(k0, k1, v)
+    const out = curvatureFromPrincipal(k0 as FloatND, k1 as FloatND, v)
     k0.delete()
     k1.delete()
     return { curvature: out, __labels } as unknown as Record<string, unknown>
@@ -93,7 +91,7 @@ operators.register({
       return { curvature: [await tf.async.shapeIndex(m, kn)], __labels } as unknown as Record<string, unknown>
     }
     const { k0, k1 } = await tf.async.principalCurvatures(m, kn)
-    const out = curvatureFromPrincipal(k0, k1, v)
+    const out = curvatureFromPrincipal(k0 as FloatND, k1 as FloatND, v)
     k0.delete()
     k1.delete()
     return { curvature: out, __labels } as unknown as Record<string, unknown>
@@ -182,7 +180,7 @@ operators.register({
     const pts = src.points
     const p = tf.point(pts)
     // distance(Form, Primitive) returns one distance per batch point.
-    const distances = tf.distance(tgt, p) as tf.NDArrayFloat32
+    const distances = tf.distance(tgt, p) as FloatND
     p.delete()
     pts.delete()
     return { distances, __labels: { distances: 'Distance' } }
@@ -193,7 +191,7 @@ operators.register({
     await tf.async.buildTree(tgt)
     const pts = src.points
     const p = tf.point(pts)
-    const distances = (await tf.async.distance(tgt, p)) as tf.NDArrayFloat32
+    const distances = (await tf.async.distance(tgt, p)) as FloatND
     p.delete()
     pts.delete()
     return { distances, __labels: { distances: 'Distance' } }

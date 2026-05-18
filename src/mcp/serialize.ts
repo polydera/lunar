@@ -16,7 +16,7 @@ export function sanitizeProperties(
   for (const [key, value] of Object.entries(props)) {
     if (value && typeof value === 'object') {
       if ('origin' in value && 'axes' in value && 'extent' in value) {
-        const obb = value as { origin: { data: Float32Array }; axes: { data: Float32Array }; extent: { data: Float32Array } }
+        const obb = value as { origin: { data: Float32Array | Float64Array }; axes: { data: Float32Array | Float64Array }; extent: { data: Float32Array | Float64Array } }
         const o = obb.origin.data
         const a = obb.axes.data
         const e = obb.extent.data
@@ -40,7 +40,7 @@ export function sanitizeProperties(
           extent: roundArr(Array.from(e)),
         }
       } else if ('data' in value) {
-        const arr = Array.from((value as { data: Float32Array }).data)
+        const arr = Array.from((value as { data: Float32Array | Float64Array }).data)
         if (key === 'aabb' && arr.length === 6) {
           const min = new THREE.Vector3(arr[0]!, arr[1]!, arr[2]!)
           const max = new THREE.Vector3(arr[3]!, arr[4]!, arr[5]!)

@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import * as tf from '@polydera/trueform'
 import { operands } from '@/core'
 import { copyTransform } from '@/core/utils'
+import { matrixFor } from '@/core/dtype'
+import { prefs } from '@/composables/usePreferences'
 import type { ActionRegistrar } from '../types'
 
 export function registerSceneActions({
@@ -278,12 +280,43 @@ export function registerSceneActions({
         if (!node?.operandId) continue
         const operand = operands.get(node.operandId)
         if (!operand) continue
-        const m = tf.ndarray(new Float32Array(transform)).reshape([4, 4])
-        ;(operand.data as any).transformation = m
+        const tfObj = operand.data as { dtype: 'float32' | 'float64'; transformation: unknown }
+        const m = matrixFor(tfObj, transform)
+        tfObj.transformation = m
         m.delete()
         ctx.scene.dirty.add(id)
       }
       return { ok: true, targets }
+    },
+  })
+
+  register({
+    id: 'scene.set_dtype',
+    label: 'Set Precision',
+    description:
+      'Set the global floating-point precision for newly created and imported geometry. ' +
+      "'float64' (double, ~15-17 significant digits) is the default and recommended for CAD-like work and numerical robustness; " +
+      "'float32' (single, ~7 significant digits) halves point-buffer memory and matches the GPU's native precision. " +
+      'Existing operands are not eagerly converted: they remain in their current dtype until used as input to an operator, ' +
+      'at which point they are converted in place to the new global setting (faces buffer is shared, only points are reallocated). ' +
+      'Cosmetic operations (transforms, color, visibility) do not trigger conversion.',
+    category: 'scene',
+    inputs: [
+      {
+        name: 'dtype',
+        label: 'Dtype',
+        type: 'string',
+        description:
+          "'float32' (single precision) or 'float64' (double precision). " +
+          'Affects all subsequent geometry creation and operator outputs.',
+        enum: ['float32', 'float64'],
+      },
+    ],
+    execute: (_, p) => {
+      const dt = p.dtype as string
+      if (dt !== 'float32' && dt !== 'float64') throw new Error("dtype must be 'float32' or 'float64'")
+      prefs.floatDtype = dt
+      return { ok: true, dtype: dt }
     },
   })
 
@@ -320,6 +353,21 @@ export function registerSceneActions({
         })
       }
       return { created, totalNodes: ctx.scene.nodes.size }
+    },
+  })
+
+  register({
+    id: 'scene.export',
+    label: 'Export',
+    description: 'Trigger browser download of meshes as STL or OBJ files. One file per mesh.',
+    category: 'scene',
+    inputs: [
+      { name: 'format', label: 'Format', type: 'string', description: 'File format', enum: ['stl', 'obj'] },
+    ],
+    usesNodeIds: true,
+    execute: (nodeIds, p) => {
+      ctx.exportSelection(p.format as 'stl' | 'obj', nodeIds)
+      return { ok: true, exported: nodeIds, format: p.format }
     },
   })
 
