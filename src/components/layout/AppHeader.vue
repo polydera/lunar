@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { useActions } from '@/composables/useActions'
 import type { useMCP } from '@/mcp/useMCP'
+import type { DropdownMenuItem } from '@nuxt/ui'
 
 type Actions = ReturnType<typeof useActions>
 type MCPHandle = ReturnType<typeof useMCP>
@@ -17,18 +18,36 @@ const props = defineProps<{
 const showSettings = defineModel<boolean>('showSettings', { required: true })
 const showHelp = defineModel<boolean>('showHelp', { required: true })
 const showMcp = defineModel<boolean>('showMcp', { required: true })
+const showCommand = defineModel<boolean>('showCommand', { required: true })
+
+const overflowItems: DropdownMenuItem[][] = [
+  [
+    { label: 'Settings', icon: 'i-lucide:settings', onSelect: () => (showSettings.value = true) },
+    { label: 'Help', icon: 'i-lucide:circle-help', onSelect: () => (showHelp.value = true) },
+    { label: 'AI / MCP', icon: 'i-lucide:bot', onSelect: () => (showMcp.value = true) },
+  ],
+  [
+    { label: 'GitHub', icon: 'i-simple-icons:github', to: 'https://github.com/polydera/lunar', target: '_blank' },
+    { label: 'polydera.com', icon: 'i-lucide:globe', to: 'https://polydera.com', target: '_blank' },
+  ],
+]
 </script>
 
 <template>
-  <WidgetMenu class="px-4 py-3 pointer-events-auto shrink-0">
-    <div class="flex flex-row gap-3 items-center">
-      <img src="/favicon.svg" class="size-8" alt="Lunar" />
-      <h1 class="flex items-center">
+  <WidgetMenu class="px-1 py-1 roomy:px-4 roomy:py-3 pointer-events-auto shrink-0">
+    <div class="flex flex-row gap-1 roomy:gap-3 items-center">
+      <div class="size-9 roomy:size-auto flex items-center justify-center">
+        <img src="/favicon.svg" class="size-7 roomy:size-8" alt="Lunar" />
+      </div>
+      <h1 class="hidden roomy:flex items-center">
         <span class="sr-only">Lunar</span>
         <img src="/lunar-wordmark.svg" class="h-6" alt="" aria-hidden="true" />
       </h1>
-      <Separator direction="vertical" class="ml-auto" />
-      <div class="flex flex-row gap-2 items-center">
+
+      <Separator direction="vertical" class="hidden roomy:block ml-auto" />
+
+      <!-- External links: desktop only -->
+      <div class="hidden roomy:flex flex-row gap-2 items-center">
         <a
           href="https://github.com/polydera/lunar"
           target="_blank"
@@ -46,16 +65,48 @@ const showMcp = defineModel<boolean>('showMcp', { required: true })
           <UIcon name="i-lucide:globe" class="size-6" />
         </a>
       </div>
-      <Separator direction="vertical" />
-      <div class="flex flex-row gap-2 items-center">
+      <Separator direction="vertical" class="hidden roomy:block" />
+
+      <!-- Mobile-only: Search button (command palette) -->
+      <button
+        class="roomy:hidden size-9 flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+        aria-label="Search commands"
+        @click="showCommand = true"
+      >
+        <UIcon name="i-lucide:search" class="size-5" />
+      </button>
+
+      <!-- Mobile-only: Overflow menu (Settings, Help, MCP, links) -->
+      <UDropdownMenu
+        :items="overflowItems"
+        :ui="{ content: 'w-56 bg-[var(--ln-popup)] backdrop-blur-xl' }"
+        class="roomy:hidden"
+      >
         <button
-          class="text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+          class="relative size-9 flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+          aria-label="More"
+        >
+          <UIcon name="i-lucide:more-vertical" class="size-5" />
+          <!-- Connection dot so MCP status is visible without opening the menu -->
+          <span
+            v-if="mcpHandle?.connected.value"
+            class="absolute top-1 right-1 size-2 rounded-full bg-[var(--ln-accent)]"
+          />
+        </button>
+      </UDropdownMenu>
+
+      <!-- Desktop-only: full action group -->
+      <div class="hidden roomy:flex flex-row gap-2 items-center">
+        <button
+          class="text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer p-1"
+          aria-label="Settings"
           @click="actions.runAction('open-settings')"
         >
           <UIcon name="i-lucide:settings" class="size-6" />
         </button>
         <button
-          class="text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+          class="text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer p-1"
+          aria-label="Help"
           @click="actions.runAction('open-help')"
         >
           <UIcon name="i-lucide:circle-help" class="size-6" />
@@ -67,6 +118,7 @@ const showMcp = defineModel<boolean>('showMcp', { required: true })
               ? 'bg-primary/20 text-[var(--ln-accent)]'
               : 'text-[var(--ln-accent)] opacity-60 hover:opacity-100'
           "
+          aria-label="MCP / AI"
           @click="showMcp = true"
         >
           <UIcon name="i-lucide:bot" class="size-5" />

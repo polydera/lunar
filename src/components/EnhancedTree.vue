@@ -37,6 +37,30 @@ function toggleExpand(id: string) {
 
 let anchorId: string | null = null
 
+// Long-press on touch toggles add/remove — the touch equivalent of Ctrl+click,
+// matching the viewport's long-press idiom.
+const LONG_PRESS_MS = 500
+const LONG_PRESS_THRESHOLD = 10
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+let longPressedId: string | null = null
+let pressStartPos = { x: 0, y: 0 }
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function toggleSelection(id: string) {
+  const current = [...props.selected]
+  const idx = current.indexOf(id)
+  if (idx !== -1) current.splice(idx, 1)
+  else current.push(id)
+  anchorId = id
+  emit('update:selected', current)
+}
+
 function flattenIds(items: TreeItem[]): string[] {
   const out: string[] = []
   for (const item of items) {
@@ -54,6 +78,12 @@ function onSelect(e: any) {
   const id = keyFn.value(item)
   // Skip second click of a double-click (detail === 2)
   if (originalEvent && originalEvent.detail > 1) return
+
+  // Long-press already toggled this id; swallow the trailing click.
+  if (longPressedId === id) {
+    longPressedId = null
+    return
+  }
 
   const shift = originalEvent?.shiftKey ?? false
   const toggle = originalEvent?.metaKey || originalEvent?.ctrlKey || false
@@ -96,6 +126,31 @@ function onSelect(e: any) {
 
 const hoveredId = ref<string | null>(null)
 const itemElements = new Map<string, HTMLElement>()
+const elementIds = new WeakMap<HTMLElement, string>()
+const trackedElements = new WeakSet<HTMLElement>()
+
+function onRowPointerDown(e: PointerEvent) {
+  if (e.pointerType !== 'touch') return
+  const id = elementIds.get(e.currentTarget as HTMLElement)
+  if (!id) return
+  longPressedId = null
+  pressStartPos = { x: e.clientX, y: e.clientY }
+  cancelLongPress()
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null
+    longPressedId = id
+    toggleSelection(id)
+  }, LONG_PRESS_MS)
+}
+
+function onRowPointerMove(e: PointerEvent) {
+  if (!longPressTimer) return
+  const dx = e.clientX - pressStartPos.x
+  const dy = e.clientY - pressStartPos.y
+  if (dx * dx + dy * dy > LONG_PRESS_THRESHOLD * LONG_PRESS_THRESHOLD) {
+    cancelLongPress()
+  }
+}
 
 function hover(id: string | null) {
   if (hoveredId.value && hoveredId.value !== id) {
@@ -125,6 +180,16 @@ function trackElement(id: string, el: any) {
   if (!parent) return
 
   itemElements.set(id, parent)
+  elementIds.set(parent, id)
+
+  if (!trackedElements.has(parent)) {
+    trackedElements.add(parent)
+    parent.addEventListener('pointerdown', onRowPointerDown)
+    parent.addEventListener('pointermove', onRowPointerMove)
+    parent.addEventListener('pointerup', cancelLongPress)
+    parent.addEventListener('pointercancel', cancelLongPress)
+    parent.addEventListener('pointerleave', cancelLongPress)
+  }
 
   const isHovered = hoveredId.value === id
   const isSelected = props.selected.includes(id)

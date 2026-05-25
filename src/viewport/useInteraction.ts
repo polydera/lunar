@@ -23,6 +23,9 @@ interface InteractionDeps {
   zoomAtPoint: (screenX: number, screenY: number, factor: number) => void
   fitToScene: () => void
   fitToNodes: (nodeIds: string[]) => void
+  // Optional cascade run on tap-empty before clearSelection.
+  // Returns true if a UI state was backed; viewport then preserves the selection.
+  onEmptyTap?: () => boolean
 }
 
 export type InteractionMode = 'move' | 'transform' | 'orbit' | 'append'
@@ -43,6 +46,7 @@ export function useInteraction({
   zoomAtPoint,
   fitToScene,
   fitToNodes,
+  onEmptyTap,
 }: InteractionDeps) {
   // ── Mode ──────────────────────────────────────────────────
   //
@@ -134,9 +138,23 @@ export function useInteraction({
   let touchLongPressTimer: ReturnType<typeof setTimeout> | null = null
   let touchPrevPinchDist = 0
   let touchPrevMidpoint = { x: 0, y: 0 }
+  let touchInitialPinchDist = 0
+  let touchInitialMidpoint = { x: 0, y: 0 }
+  // Two-finger sub-gesture commit (zoom vs pan). Once one axis crosses the
+  // commit threshold the other is suppressed for the rest of the gesture —
+  // same idea as the one-finger grace window, applied across the two two-finger
+  // axes. Prevents incidental midpoint drift during a pinch from also panning
+  // the camera, and incidental distance jitter during a pan from also zooming.
+  let touchTwoFingerMode: 'pending' | 'zoom' | 'pan' = 'pending'
   let touchDragPick: PickResult | null = null
   let touchDragNodeIds: string[] = []
-  const TOUCH_DRAG_THRESHOLD = 10
+  const TOUCH_DRAG_THRESHOLD = 15
+  const TOUCH_TWO_FINGER_COMMIT = 18
+  // Grace window after first finger lands — if a second finger arrives within
+  // this, we go straight to two_finger and never fire one-finger drag. Mirrors
+  // the requireFailure() pattern from UIKit / Hammer.js. ~60ms is the empirical
+  // sweet spot: above OS pointer noise, below deliberate two-finger landing.
+  const TOUCH_PINCH_GRACE_MS = 60
   const LONG_PRESS_MS = 500
   const DOUBLE_TAP_MS = 300
 
@@ -180,6 +198,9 @@ export function useInteraction({
       touchState = 'two_finger'
       touchPrevPinchDist = touchPinchDist()
       touchPrevMidpoint = touchMidpoint()
+      touchInitialPinchDist = touchPrevPinchDist
+      touchInitialMidpoint = touchPrevMidpoint
+      touchTwoFingerMode = 'pending'
       // Reset any in-progress one-finger drag
       dragging = false
       dragNodeIds = []
@@ -194,6 +215,11 @@ export function useInteraction({
     if (touchState === 'pending') {
       const dx = e.clientX - touchStartPos.x
       const dy = e.clientY - touchStartPos.y
+      const elapsed = Date.now() - touchStartTime
+      // Grace window: don't commit to one-finger drag until the pinch window
+      // has elapsed. If a second finger lands during this window, pointerdown
+      // will switch us to 'two_finger' and one_drag never fires.
+      if (elapsed < TOUCH_PINCH_GRACE_MS) return
       if (dx * dx + dy * dy > TOUCH_DRAG_THRESHOLD * TOUCH_DRAG_THRESHOLD) {
         cancelLongPress()
         touchState = 'one_drag'
@@ -201,7 +227,7 @@ export function useInteraction({
         // Determine drag behavior based on mode and pick
         const m = mode.value
         if (touchDragPick && (m === 'move' || m === 'transform')) {
-          // Drag on mesh → translate
+          // Drag on mesh → translate (move) or rotate selection (transform)
           dragging = true
           if (scene.activeSelection.includes(touchDragPick.nodeId)) {
             touchDragNodeIds = [...scene.activeSelection]
@@ -227,6 +253,21 @@ export function useInteraction({
           updateNDCFromXY(e.clientX, e.clientY)
           raycaster.setFromCamera(ndc, camera)
           raycaster.ray.intersectPlane(movingPlane, lastPoint)
+        } else if (m === 'transform' && scene.activeSelection.length > 0) {
+          // Transform mode + drag on empty with selection → rotate selection around cursor
+          // (mirrors desktop behavior at the equivalent branch)
+          dragging = true
+          touchDragNodeIds = [...scene.activeSelection]
+          dragNodeIds = touchDragNodeIds
+          const sceneCenter = getInViewCenter() ?? cameraTarget.clone()
+          const camDir = new THREE.Vector3()
+          camera.getWorldDirection(camDir)
+          const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, sceneCenter)
+          updateNDCFromXY(e.clientX, e.clientY)
+          raycaster.setFromCamera(ndc, camera)
+          const hit = new THREE.Vector3()
+          raycaster.ray.intersectPlane(plane, hit)
+          dragCenter = hit
         } else {
           // Drag on empty → orbit
           dragging = true
@@ -243,7 +284,8 @@ export function useInteraction({
     if (touchState === 'one_drag') {
       updateNDCFromXY(e.clientX, e.clientY)
       if (dragNodeIds.length > 0) {
-        handleTranslate()
+        if (mode.value === 'transform') handleRotate(e)
+        else handleTranslate()
       } else {
         // Orbit — reuse handleOrbit logic inline
         const dx = -(e.clientX - lastPointerPos.x)
@@ -266,19 +308,46 @@ export function useInteraction({
     if (touchState === 'two_finger' && touchPointers.size === 2) {
       const dist = touchPinchDist()
       const mid = touchMidpoint()
+      const transformingSelection = mode.value === 'transform' && scene.activeSelection.length > 0
 
-      // Zoom (pinch)
-      if (touchPrevPinchDist > 0 && dist > 0) {
-        const factor = dist / touchPrevPinchDist
-        if (Math.abs(factor - 1) > 0.005) {
-          zoomAtPoint(mid.x, mid.y, factor)
+      // Commit to a two-finger sub-gesture (zoom or pan) based on which axis
+      // crosses the threshold first. Until commit, neither fires — eliminates
+      // incidental cross-axis motion at the start of either gesture.
+      if (touchTwoFingerMode === 'pending') {
+        const distDelta = Math.abs(dist - touchInitialPinchDist)
+        const panDelta = Math.hypot(mid.x - touchInitialMidpoint.x, mid.y - touchInitialMidpoint.y)
+        if (distDelta > TOUCH_TWO_FINGER_COMMIT || panDelta > TOUCH_TWO_FINGER_COMMIT) {
+          touchTwoFingerMode = distDelta >= panDelta ? 'zoom' : 'pan'
+          // Re-anchor prev values so the committed gesture starts from "now"
+          // without applying the threshold's worth of motion in one frame.
+          touchPrevPinchDist = dist
+          touchPrevMidpoint = mid
+        } else {
+          // Still ambiguous — wait. Don't update prev values either, so we
+          // measure displacement from the gesture's start, not frame-to-frame.
+          return
         }
       }
 
-      // Pan (midpoint shift)
+      // Pinch: scale selection in Transform mode (camera zoom is suppressed
+      // in transform mode, matching the desktop wheel-scales-selection idiom).
+      // Otherwise: zoom camera.
+      if (touchTwoFingerMode === 'zoom' && touchPrevPinchDist > 0 && dist > 0) {
+        const factor = dist / touchPrevPinchDist
+        if (Math.abs(factor - 1) > 0.005) {
+          if (transformingSelection) {
+            scaleSelectionBy(factor)
+          } else {
+            zoomAtPoint(mid.x, mid.y, factor)
+          }
+        }
+      }
+
+      // Pan (midpoint shift). Only fires when the gesture committed to pan,
+      // and never in transform mode + selection (camera fully suppressed).
       const panDx = mid.x - touchPrevMidpoint.x
       const panDy = mid.y - touchPrevMidpoint.y
-      if (Math.abs(panDx) > 0.5 || Math.abs(panDy) > 0.5) {
+      if (touchTwoFingerMode === 'pan' && !transformingSelection && (Math.abs(panDx) > 0.5 || Math.abs(panDy) > 0.5)) {
         // Pan: project midpoint shift to world space
         const camDir = new THREE.Vector3()
         camera.getWorldDirection(camDir)
@@ -336,7 +405,7 @@ export function useInteraction({
           const hit = pick()
           if (hit) {
             scene.handleSelect(hit.nodeId, false)
-          } else {
+          } else if (!onEmptyTap?.()) {
             scene.clearSelection()
           }
         }
@@ -565,7 +634,7 @@ export function useInteraction({
       const add = e.shiftKey || e.metaKey || e.ctrlKey
       scene.handleSelect(pointerDownPick.nodeId, add)
     } else if (!pointerDownPick && !pointerMoved) {
-      scene.clearSelection()
+      if (!onEmptyTap?.()) scene.clearSelection()
     }
 
     pointerIsDown = false
@@ -861,8 +930,16 @@ export function useInteraction({
   function handleScaleSelection(_event: WheelEvent, factor: number): boolean {
     if (mode.value !== 'transform') return false
     if (dragging) return false
+    if (scene.activeSelection.length === 0) return false
+    scaleSelectionBy(factor)
+    return true
+  }
+
+  // Core scaling — shared between wheel handler and touch pinch.
+  // Caller is responsible for gating (mode, selection presence, etc.).
+  function scaleSelectionBy(factor: number) {
     const nodeIds = [...scene.activeSelection]
-    if (nodeIds.length === 0) return false
+    if (nodeIds.length === 0) return
 
     for (const nodeId of nodeIds) {
       const node = scene.getNode(nodeId)
@@ -900,8 +977,6 @@ export function useInteraction({
 
       scene.dirty.add(nodeId)
     }
-
-    return true
   }
 
   // ── Rotate selection 90° (axes widget click in Transform mode) ────────

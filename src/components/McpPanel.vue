@@ -64,7 +64,7 @@ const codexCmd = computed(() => `codex mcp add lunar -- npx mcp-remote ${props.m
         <input
           :value="mcpUrl"
           readonly
-          class="flex-1 bg-[var(--ln-muted)] text-xs text-default/60 font-mono rounded px-2.5 py-1.5 outline-none select-all"
+          class="flex-1 bg-[var(--ln-muted)] text-base text-default/60 font-mono rounded px-2.5 py-1.5 outline-none select-all"
           @focus="($event.target as HTMLInputElement).select()"
         />
         <UButton

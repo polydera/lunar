@@ -109,7 +109,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           </div>
 
           <!-- Content -->
-          <div class="px-8 pb-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="px-8 pb-4 grid grid-cols-1 roomy:grid-cols-2 gap-6">
             <!-- Download -->
             <div class="flex flex-col gap-2">
               <h3 class="text-xs font-semibold uppercase tracking-wider text-default/40 mb-1">Download a Mesh</h3>

@@ -18,14 +18,18 @@ export interface PickResult {
   elementId: number
 }
 
-export function useViewport(container: HTMLElement, scene: Scene) {
+export interface UseViewportOptions {
+  onEmptyTap?: () => boolean
+}
+
+export function useViewport(container: HTMLElement, scene: Scene, opts: UseViewportOptions = {}) {
   // ── Renderer ─────────────────────────────────────────────
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.0
-  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
 
@@ -253,6 +257,7 @@ export function useViewport(container: HTMLElement, scene: Scene) {
     zoomAtPoint,
     fitToScene: () => fitToScene(),
     fitToNodes: (ids: string[]) => fitToNodes(ids),
+    onEmptyTap: opts.onEmptyTap,
   })
 
   renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
@@ -270,7 +275,7 @@ export function useViewport(container: HTMLElement, scene: Scene) {
     const frustumHeight = camera.top - camera.bottom
     const frustumWidth = camera.right - camera.left
     const zoomH = frustumHeight / maxDim
-    const zoomW = frustumWidth / (maxDim * (container.clientWidth / container.clientHeight))
+    const zoomW = frustumWidth / maxDim
     camera.zoom = Math.min(zoomH, zoomW)
     camera.updateProjectionMatrix()
 

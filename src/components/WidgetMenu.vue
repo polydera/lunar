@@ -11,7 +11,7 @@ const props = withDefaults(
 )
 
 const baseClasses =
-  'w-fit rounded-lg bg-[var(--ln-panel)] shadow-lg backdrop-blur p-1.5 border-[length:var(--ln-panel-border-width)] border-[color:var(--ln-panel-border)]'
+  'w-fit rounded-lg bg-[var(--ln-popup)] roomy:bg-[var(--ln-panel)] shadow-lg backdrop-blur p-1.5 border-[length:var(--ln-panel-border-width)] border-[color:var(--ln-panel-border)]'
 const mergedClasses = computed(() => twMerge(baseClasses, props.class))
 
 const widgetMenu = useTemplateRef('widgetMenu')

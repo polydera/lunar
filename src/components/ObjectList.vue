@@ -161,7 +161,7 @@ watch(
                     v-if="editingId === item.value"
                     :data-rename="item.value"
                     v-model="editingLabel"
-                    class="text-sm bg-transparent outline-none border-b border-[var(--ln-accent)] w-full"
+                    class="text-base bg-transparent outline-none border-b border-[var(--ln-accent)] w-full"
                     @keydown.enter="commitRename"
                     @keydown.escape="cancelRename"
                     @keydown.stop
