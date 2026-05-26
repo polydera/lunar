@@ -24,8 +24,8 @@ const groups = computed<CommandPaletteGroup<PaletteItem>[]>(() => {
     const items: PaletteItem[] = []
     for (const item of cat.items) {
       if (item.type === 'action') {
-        // Actions with drill-ins (like download) set activeDrillIn; others run directly
-        const hasDrillIn = item.id === 'io-download'
+        // Actions with drill-ins set activeDrillIn; others run directly.
+        const hasDrillIn = item.id === 'io-download' || item.id === 'tf.analysis'
         items.push({
           label: item.label,
           icon: item.icon ?? cat.icon,

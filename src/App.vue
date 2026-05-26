@@ -113,14 +113,17 @@ watch(isMobile, (mobile) => {
   if (!mobile) activeMobilePanel.value = null
 })
 
-function closeMobilePanel() {
-  activeMobilePanel.value = null
-}
+// ContextPanel is only mounted on mobile when the Tools panel is active.
+watch(activeDrillIn, (drill) => {
+  if (drill && isMobile.value && activeMobilePanel.value !== 'tools') {
+    activeMobilePanel.value = 'tools'
+  }
+})
 
-// Same back-cascade as the global Escape handler. Used by viewport tap-empty
-// so a tap on empty space backs out the most-specific UI state first
-// (axis lock, sticky mode, ContextPanel drill-in, mobile panel) and only
-// clears the active selection when no UI state was active.
+// Same back-cascade as the global Escape handler. Used by both the viewport
+// tap-empty path and the mobile scrim so a tap backs out the most-specific
+// UI state first (axis lock, sticky mode, ContextPanel drill-in / live
+// preview, mobile panel) before clearing the selection.
 function onViewportEmptyTap(): boolean {
   if (viewport?.clearAxisLock()) return true
   if (viewport?.clearStickyMode()) return true
@@ -238,12 +241,13 @@ onBeforeUnmount(() => {
       <!-- Full-screen 3D viewport -->
       <div ref="viewportRef" class="absolute inset-0 w-full h-full three-bg touch-none select-none" />
 
-      <!-- Mobile scrim: closes the active panel on viewport tap without
-           letting the tap reach the viewport's selection handlers. -->
+      <!-- Mobile scrim: runs the back cascade on viewport tap (cancel preview,
+           back drill-in, close category, close panel) without letting the tap
+           reach the viewport's selection handlers. -->
       <div
         v-if="isMobile && activeMobilePanel"
         class="absolute inset-0 z-[5]"
-        @pointerdown="closeMobilePanel"
+        @pointerdown="onViewportEmptyTap"
       />
 
       <!-- ── Desktop / tablet layout (≥md) ──────────────────────── -->

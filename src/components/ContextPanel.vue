@@ -96,45 +96,51 @@ function restoreNodeState() {
 }
 
 // When a generator drill-in opens, create the mesh and start live tracking
-watch(activeDrillIn, async (drillIn, old) => {
-  // Leaving a live preview without confirming → cancel
-  if (liveReplaceMap.value && drillIn !== old) {
-    restoreNodeState()
-    for (const nodeId of Object.values(liveReplaceMap.value)) {
-      props.scene.removeNode(nodeId)
+// immediate: handle mobile mount-with-drill-in (search opens panel + sets drill-in
+// before ContextPanel exists, so the regular watcher would miss the change).
+watch(
+  activeDrillIn,
+  async (drillIn, old) => {
+    // Leaving a live preview without confirming → cancel
+    if (liveReplaceMap.value && drillIn !== old) {
+      restoreNodeState()
+      for (const nodeId of Object.values(liveReplaceMap.value)) {
+        props.scene.removeNode(nodeId)
+      }
+      liveReplaceMap.value = null
+      liveOpId.value = null
     }
-    liveReplaceMap.value = null
-    liveOpId.value = null
-  }
 
-  if (!drillIn || drillIn.type !== 'operator') return
-  const op = drillIn.operator
-  if (getOperationMode(op, 0).kind !== 'generator') return
+    if (!drillIn || drillIn.type !== 'operator') return
+    const op = drillIn.operator
+    if (getOperationMode(op, 0).kind !== 'generator') return
 
-  const beforeIds = new Set(props.scene.nodes.keys())
-  runAction?.(`${op.id}.run`)
+    const beforeIds = new Set(props.scene.nodes.keys())
+    runAction?.(`${op.id}.run`)
 
-  // Wait for async dispatch to complete
-  await new Promise((r) => setTimeout(r, 150))
+    // Wait for async dispatch to complete
+    await new Promise((r) => setTimeout(r, 150))
 
-  // Build replaceMap from newly created nodes
-  const map: Record<string, string> = {}
-  for (const output of op.outputs) {
-    for (const [id] of props.scene.nodes) {
-      if (beforeIds.has(id)) continue
-      if (!map[output.name]) {
-        map[output.name] = id
-        break
+    // Build replaceMap from newly created nodes
+    const map: Record<string, string> = {}
+    for (const output of op.outputs) {
+      for (const [id] of props.scene.nodes) {
+        if (beforeIds.has(id)) continue
+        if (!map[output.name]) {
+          map[output.name] = id
+          break
+        }
       }
     }
-  }
 
-  liveReplaceMap.value = map
-  liveOpId.value = op.id
+    liveReplaceMap.value = map
+    liveOpId.value = op.id
 
-  // Dim everything except the new preview nodes
-  dimOtherNodes(new Set(Object.values(map)))
-})
+    // Dim everything except the new preview nodes
+    dimOtherNodes(new Set(Object.values(map)))
+  },
+  { immediate: true },
+)
 
 // Watch scalar params → rebuild on change
 watch(
@@ -241,6 +247,17 @@ watch(
       runReport()
     }
   },
+)
+
+// Mirror handleItemClick: tf.analysis drill-in → runReport.
+watch(
+  activeDrillIn,
+  (drillIn) => {
+    if (drillIn?.type === 'action' && drillIn.id === 'tf.analysis') {
+      runReport()
+    }
+  },
+  { immediate: true },
 )
 
 async function runReport() {
