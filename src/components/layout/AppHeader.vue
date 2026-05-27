@@ -36,7 +36,7 @@ const overflowItems: DropdownMenuItem[][] = [
 <template>
   <WidgetMenu class="px-1 py-1 roomy:px-4 roomy:py-3 pointer-events-auto shrink-0">
     <div class="flex flex-row gap-1 roomy:gap-3 items-center">
-      <div class="size-9 roomy:size-auto flex items-center justify-center">
+      <div class="size-chip-btn roomy:size-auto flex items-center justify-center">
         <img src="/favicon.svg" class="size-7 roomy:size-8" alt="Lunar" />
       </div>
       <h1 class="hidden roomy:flex items-center">
@@ -69,11 +69,11 @@ const overflowItems: DropdownMenuItem[][] = [
 
       <!-- Mobile-only: Search button (command palette) -->
       <button
-        class="roomy:hidden size-9 flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+        class="roomy:hidden size-chip-btn flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
         aria-label="Search commands"
         @click="showCommand = true"
       >
-        <UIcon name="i-lucide:search" class="size-5" />
+        <UIcon name="i-lucide:search" class="size-chip-icon" />
       </button>
 
       <!-- Mobile-only: Overflow menu (Settings, Help, MCP, links) -->
@@ -83,10 +83,10 @@ const overflowItems: DropdownMenuItem[][] = [
         class="roomy:hidden"
       >
         <button
-          class="relative size-9 flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+          class="relative size-chip-btn flex items-center justify-center rounded-md text-[var(--ln-accent)] opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
           aria-label="More"
         >
-          <UIcon name="i-lucide:more-vertical" class="size-5" />
+          <UIcon name="i-lucide:more-vertical" class="size-chip-icon" />
           <!-- Connection dot so MCP status is visible without opening the menu -->
           <span
             v-if="mcpHandle?.connected.value"

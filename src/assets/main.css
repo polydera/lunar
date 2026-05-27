@@ -9,15 +9,23 @@
   --spacing-safe-bottom: calc(env(safe-area-inset-bottom) + var(--ln-inset));
   --spacing-safe-left: calc(env(safe-area-inset-left) + var(--ln-inset));
   --spacing-panel-gap: var(--ln-gap);
+
+  /* Touch UI chip tokens. Scale with the tier via media queries in theme.css.
+     Use in templates as `size-chip-btn`, `size-chip-icon`, `gap-chip`, `text-chip`. */
+  --spacing-chip-btn: var(--ln-chip-btn);
+  --spacing-chip-icon: var(--ln-chip-icon);
+  --spacing-chip-gap: var(--ln-chip-gap);
+  --text-chip: var(--ln-chip-text);
 }
 
-/* Custom responsive variant: "roomy" — the device has enough space in BOTH
-   dimensions to host the docked desktop layout. Used in components that
-   need to switch UI between the mobile chip layout and the desktop docked
-   layout. Anything not roomy gets the mobile UI (phone in either orientation,
-   short windows, narrow desktop windows).
-   Keep thresholds in sync with `src/composables/useBreakpoint.ts`. */
-@custom-variant roomy (@media (min-width: 768px) and (min-height: 501px));
+/* Custom responsive variant: "roomy" — the device has a precise primary
+   pointer (mouse/trackpad) AND enough space in both dimensions to host the
+   docked desktop layout. Anything else gets the mobile chip layout: touch-
+   primary devices (iPad finger, iPhone), phone landscape, short or narrow
+   windows. iPad with Magic Mouse / trackpad reports `(pointer: fine)` and
+   stays on desktop layout.
+   Keep conditions in sync with `src/composables/useBreakpoint.ts`. */
+@custom-variant roomy (@media (pointer: fine) and (min-width: 768px) and (min-height: 501px));
 
 html,
 body {

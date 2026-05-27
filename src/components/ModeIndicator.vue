@@ -40,9 +40,9 @@ function onTap(e: PointerEvent) {
 
 <template>
   <WidgetMenu :class="isTouchDevice ? 'px-3 py-1 roomy:px-4 roomy:py-2 cursor-pointer' : 'px-3 py-1 roomy:px-4 roomy:py-2'" @pointerup="onTap">
-    <div class="flex items-center gap-2 roomy:gap-2.5 select-none h-9 roomy:h-auto">
-      <UIcon :name="current.icon" class="size-5 text-[var(--ln-accent)]" />
-      <span class="text-sm roomy:text-base">{{ current.label }}</span>
+    <div class="flex items-center gap-2 roomy:gap-2.5 select-none h-chip-btn roomy:h-auto">
+      <UIcon :name="current.icon" class="size-chip-icon text-[var(--ln-accent)]" />
+      <span class="text-chip">{{ current.label }}</span>
       <span
         v-if="isSticky"
         class="size-2 rounded-full bg-[var(--ln-accent)]"

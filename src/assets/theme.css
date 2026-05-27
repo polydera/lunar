@@ -83,4 +83,38 @@
   --ln-bg-gradient-mid: #121f1d;
   --ln-bg-gradient-end: #192a27;
   --ln-bg-glow: rgba(0, 213, 190, 0.06);
+
+  /* ── Chip dimensions ──────────────────────────────────────────
+   * Drives the touch UI chips: launcher buttons, mode indicator,
+   * header icons, active-task chip, selection-count chip.
+   * Defaults here are phone-sized; the `comfy` media query below
+   * scales them up on iPad-class touch devices. Desktop layouts
+   * use their own explicit `roomy:` overrides in component CSS.
+   * Aliased to Tailwind utilities in `main.css` (size-chip-btn,
+   * size-chip-icon, text-chip, gap-chip).
+   * ─────────────────────────────────────────────────────────── */
+  --ln-chip-btn: 2.25rem;   /* 36px — tappable button square */
+  --ln-chip-icon: 1.25rem;  /* 20px — icon inside button */
+  --ln-chip-text: 0.875rem; /* 14px — chip label text-size */
+  --ln-chip-gap: 0.125rem;  /* 2px — gap between chip children */
+}
+
+/* Comfy: touch device with iPad-class viewport (both dimensions ≥ 700).
+   Scale chip chrome up so it feels right on a 10–13" screen. */
+@media (pointer: coarse) and (min-width: 700px) and (min-height: 700px) {
+  :root {
+    --ln-chip-btn: 3rem;     /* 48px */
+    --ln-chip-icon: 1.5rem;  /* 24px */
+    --ln-chip-text: 1rem;    /* 16px (text-base) */
+    --ln-chip-gap: 0.25rem;
+  }
+}
+
+/* Roomy: keyboard+mouse with viewport headroom (desktop). Chip text matches
+   the rest of the desktop UI; icon/button sizes stay at phone defaults since
+   the desktop chrome is hand-tuned per component with literal `roomy:` classes. */
+@media (pointer: fine) and (min-width: 768px) and (min-height: 501px) {
+  :root {
+    --ln-chip-text: 1rem;
+  }
 }

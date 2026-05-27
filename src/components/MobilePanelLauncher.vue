@@ -20,11 +20,11 @@ function toggle(kind: MobilePanelKind) {
 
 <template>
   <WidgetMenu class="pointer-events-auto px-1 py-1">
-    <div class="flex flex-row gap-0.5 items-center">
+    <div class="flex flex-row gap-chip-gap items-center">
       <button
         v-for="item in items"
         :key="item.kind"
-        class="relative size-9 flex items-center justify-center rounded-md transition-colors cursor-pointer"
+        class="relative size-chip-btn flex items-center justify-center rounded-md transition-colors cursor-pointer"
         :class="
           active === item.kind
             ? 'bg-[var(--ln-accent)]/20 text-[var(--ln-accent)]'
@@ -34,7 +34,7 @@ function toggle(kind: MobilePanelKind) {
         :aria-pressed="active === item.kind"
         @click="toggle(item.kind)"
       >
-        <UIcon :name="item.icon" class="size-5" />
+        <UIcon :name="item.icon" class="size-chip-icon" />
         <UIcon
           v-if="item.kind === 'tasks' && hasRunningTask"
           name="i-lucide:loader-2"
