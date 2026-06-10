@@ -1,6 +1,6 @@
 {
   "name": "luna",
-  "version": "0.9.4",
+  "version": "0.9.7",
   "private": true,
   "type": "module",
   "engines": {
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@nuxt/ui": "^4.7.1",
-    "@polydera/trueform": "^0.9.4",
+    "@polydera/trueform": "^0.9.7",
     "@vueuse/core": "^13.9.0",
     "aria-hidden": "^1.2.6",
     "fflate": "^0.8.3",

@@ -100,13 +100,14 @@
 }
 
 /* Comfy: touch device with iPad-class viewport (both dimensions ≥ 700).
-   Scale chip chrome up so it feels right on a 10–13" screen. */
+   Bump the root font-size so every rem-based size (text, icons, paddings,
+   chip dimensions) scales up proportionally — covers panels, status chips,
+   menu items, list rows, and Nuxt UI internals in one go.
+   18px = +12.5% over the 16px default; tune higher (19–20) for a more
+   aggressive bump. */
 @media (pointer: coarse) and (min-width: 700px) and (min-height: 700px) {
   :root {
-    --ln-chip-btn: 3rem;     /* 48px */
-    --ln-chip-icon: 1.5rem;  /* 24px */
-    --ln-chip-text: 1rem;    /* 16px (text-base) */
-    --ln-chip-gap: 0.25rem;
+    font-size: 22px;
   }
 }
 

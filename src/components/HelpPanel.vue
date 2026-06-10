@@ -145,7 +145,7 @@ const tips = computed(() =>
       ],
 )
 
-const version = '0.9.4'
+const version = '0.9.7'
 </script>
 
 <template>

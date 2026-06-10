@@ -128,6 +128,7 @@ export function buildCategories(): Category[] {
       minSelection: 1,
       items: [
         { type: 'operator', operator: operators.get('tf.decimated')! },
+        { type: 'operator', operator: operators.get('tf.simplified')! },
         { type: 'operator', operator: operators.get('tf.isotropicRemeshed')! },
         { type: 'operator', operator: operators.get('tf.laplacianSmoothed')! },
         { type: 'operator', operator: operators.get('tf.taubinSmoothed')! },
